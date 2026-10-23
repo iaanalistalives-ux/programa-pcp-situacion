@@ -702,6 +702,15 @@ input.fecha.propia{border-color:var(--sage);background:#F0F8F4;font-weight:700;c
 input.fecha:disabled{background:var(--warm-light);color:var(--stone);}
 input.fecha.guardando{opacity:.5;}
 .sist{color:var(--stone);font-size:11.5px;}
+/* deslizar la tabla con la manito y con flechas */
+.twrap{position:relative;}
+#tFec{cursor:grab;}
+#tFec.arrastrando{cursor:grabbing;user-select:none;}
+.flecha-scroll{position:absolute;top:50%;transform:translateY(-50%);z-index:15;width:40px;height:40px;border-radius:50%;border:none;background:var(--petrol);color:#fff;font-size:24px;line-height:1;cursor:pointer;box-shadow:var(--sh-h);transition:opacity .15s,background .15s;}
+.flecha-scroll:hover{background:var(--sage);}
+.flecha-scroll.izq{left:6px;} .flecha-scroll.der{right:6px;}
+.flecha-scroll.oculta{opacity:0;pointer-events:none;}
+@media print{.flecha-scroll{display:none!important;}}
 /* ventana */
 .modal{position:fixed;inset:0;background:rgba(14,59,54,.55);z-index:1000;display:none;align-items:center;justify-content:center;padding:2.5vh 2.5vw;}
 .modal.ver{display:flex;}
@@ -772,7 +781,7 @@ body.conModal{overflow:hidden;}
     <div class="panel col12"><span class="tira meta"></span>
       <div class="pt">XFTY y fecha de despacho de cada OP</div>
       <div class="ph">Aquí PCP escribe y corrige las fechas. Lo que se escribe se guarda solo, queda en el historial y ninguna actualización del sistema lo cambia. La XFTY mueve la semana y las fechas meta de corte (XFTY − <span class="pD1"></span> días), costura (− <span class="pD2"></span>) y acabado (− <span class="pD3"></span>) que se ven en el dashboard. Si la OP no tiene XFTY se usa la fecha de despacho del sistema. Vacía una fecha para volver a la del sistema.</div>
-      <div class="tscroll" id="tFec"></div></div>
+      <div class="twrap"><button type="button" class="flecha-scroll izq oculta" id="flIz" title="Deslizar a la izquierda">‹</button><button type="button" class="flecha-scroll der" id="flDe" title="Deslizar a la derecha">›</button><div class="tscroll" id="tFec"></div></div></div>
   </div>
 </div>
 <div class="modal" id="modal"><div class="caja"><div class="mcab"><b id="mTit"></b><button class="btn" type="button" id="mCerrar">✕ Cerrar</button></div><div class="mcuerpo" id="mCuerpo"></div></div></div>
@@ -922,7 +931,7 @@ function abrirHist(op){
 }
 function abrirModal(t,h){$('mTit').textContent=t;$('mCuerpo').innerHTML=h;$('modal').classList.add('ver');document.body.classList.add('conModal');}
 function cerrarModal(){$('modal').classList.remove('ver');document.body.classList.remove('conModal');}
-function render(){pintarFechas(filas());}
+function render(){pintarFechas(filas());actualizarFlechas();}
 function llenarSelects(){
   var cl={},sm={};D.forEach(function(r){cl[r.cliente_corto]=1;sm[semKey(r)]=1;});
   $('fCli').innerHTML='<option value="">Todos los clientes</option>'+Object.keys(cl).sort().map(function(c){return '<option>'+esc(c)+'</option>';}).join('');
@@ -942,6 +951,23 @@ document.addEventListener('click',function(e){var b=e.target.closest('button');i
   if(b.dataset.color)abrirColores(b.dataset.color);if(b.dataset.hist)abrirHist(b.dataset.hist);});
 $('mCerrar').onclick=cerrarModal;$('modal').addEventListener('click',function(e){if(e.target===$('modal'))cerrarModal();});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')cerrarModal();});
+
+/* ---------- deslizar la tabla: manito (arrastrar) y flechas ---------- */
+function actualizarFlechas(){var c=$('tFec'),iz=$('flIz'),de=$('flDe');if(!c||!iz||!de)return;
+  var max=c.scrollWidth-c.clientWidth;iz.classList.toggle('oculta',c.scrollLeft<=2);de.classList.toggle('oculta',max<=2||c.scrollLeft>=max-2);}
+(function deslizar(){
+  var c=$('tFec'),arr=false,mov=false,x0=0,y0=0,sx=0,sy=0,enCtl=false,UMBRAL=6;
+  c.addEventListener('mousedown',function(e){if(e.button!==0)return;enCtl=!!e.target.closest('input, button, a, select, textarea, label');
+    arr=true;mov=false;x0=e.pageX;y0=e.pageY;sx=c.scrollLeft;sy=c.scrollTop;if(!enCtl)e.preventDefault();});
+  window.addEventListener('mousemove',function(e){if(!arr)return;var dx=e.pageX-x0,dy=e.pageY-y0;
+    if(Math.abs(dx)>UMBRAL||Math.abs(dy)>UMBRAL)mov=true;
+    if(mov){c.scrollLeft=sx-dx;c.scrollTop=sy-dy;c.classList.add('arrastrando');actualizarFlechas();}});
+  window.addEventListener('mouseup',function(){if(!arr)return;arr=false;c.classList.remove('arrastrando');
+    if(mov&&enCtl){var sup=function(ev){ev.stopPropagation();ev.preventDefault();document.removeEventListener('click',sup,true);};document.addEventListener('click',sup,true);setTimeout(function(){document.removeEventListener('click',sup,true);},0);}});
+  c.addEventListener('scroll',actualizarFlechas);window.addEventListener('resize',actualizarFlechas);
+  $('flIz').addEventListener('click',function(){c.scrollBy({left:-360,behavior:'smooth'});});
+  $('flDe').addEventListener('click',function(){c.scrollBy({left:360,behavior:'smooth'});});
+})();
 
 /* ---------- Excel LIVES ---------- */
 function xcol(c,i){var tipo={n0:'entero',n1:'decimal',n2:'decimal',pct:'porcentaje',fecha:'fecha',html:'texto'}[c.tipo]||'texto';return {campo:'c'+i,titulo:c.t,tipo:tipo};}
