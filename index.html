@@ -718,6 +718,9 @@ body.conModal{overflow:hidden;}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--petrol);color:#fff;padding:10px 18px;border-radius:10px;font-weight:700;font-size:14px;z-index:1100;display:none;box-shadow:0 8px 24px rgba(0,0,0,.25);}
 #toast.malo{background:var(--rose);}
 /* cumplimiento */
+.kpi.clic{cursor:pointer;} .kpi.clic:hover{box-shadow:var(--sh-h);transform:translateY(-1px);}
+.kpi.sel{outline:3px solid var(--sage);outline-offset:-3px;}
+#panCumLis{scroll-margin-top:170px;}
 .kpi.riesgo .banda{background:var(--tan);} .kpi.riesgo .v{color:#B45309;}
 /* tarjetas */
 .tscroll.tarjetas{max-height:none;overflow:visible;}
@@ -862,8 +865,8 @@ tr.sub.subE td{background:var(--warm-light);color:var(--stone);}
         <div class="tscroll" id="tCumRes" style="margin-top:12px"></div></div>
     </div>
     <div class="grid">
-      <div class="panel col12"><span class="tira resultado"></span><div class="pt">OP que no cumplen o van en riesgo</div>
-        <div class="ph">Primero las que ya vencieron, luego las que van en riesgo; dentro de cada grupo, la más atrasada arriba. Los días son contra la XFTY.</div>
+      <div class="panel col12" id="panCumLis"><span class="tira resultado"></span><div class="pt" id="ptCumLis">OP que no cumplen o van en riesgo</div>
+        <div class="ph" id="phCumLis"></div>
         <div class="tscroll" id="tCumLis"></div></div>
     </div>
   </div>
@@ -1325,7 +1328,7 @@ function pintarAcabado(rs){
 }
 
 /* ---------- CUMPLIMIENTO: ¿va al día con las fechas de PCP? ---------- */
-var ESTOP={},CU={dim:'cliente'};
+var ESTOP={},CU={dim:'cliente',sel:''};
 var CUE={no:['No cumple','#DC2626','ale'],riesgo:['En riesgo','#F59E0B','rev'],ok:['Cumple','#0F7A5A','ok']};
 function mesDe(k,d){var y=+k.slice(0,4),m=+k.slice(5,7)-1+d;return new Date(Date.UTC(y,m,1)).toISOString().slice(0,7);}
 function rangoTxt(){if(!F.desde&&!F.hasta)return '';return ' · '+(F.desde?mesTxt(F.desde):'inicio')+' a '+(F.hasta?mesTxt(F.hasta):'sin límite')+(F.atras&&F.desde?' (con atrasadas anteriores)':'');}
@@ -1358,6 +1361,8 @@ function pintarCumplimiento(rs){
     kpi(n.no?'alert':'neutro','OP que no cumplen',String(n.no),'XFTY vencida y sin encajar · '+n0(feNo)+' prendas por encajar')+
     kpi(n.riesgo?'riesgo':'neutro','OP en riesgo',String(n.riesgo),'XFTY vigente, pero una etapa ya pasó su fecha meta')+
     kpi(cn.length?'alert':'neutro','Clientes con OP que no cumplen',String(cn.length),cn.length?cn.join(' · '):'Ninguno');
+  [].forEach.call($('kCum').querySelectorAll('.kpi'),function(k,i){var v=['ok','no','riesgo','cli'][i];if(!tot||!v)return;
+    k.classList.add('clic');k.dataset.sel=v;k.classList.toggle('sel',CU.sel===v);var t=k.querySelector('.s');if(t)t.textContent+=' · toca para ver cuáles';});
   $('cumVacio').style.display=tot?'none':'block';$('wCum').style.display=tot?'':'none';
   if(!tot){$('tCumRes').innerHTML='';$('tCumLis').innerHTML='';if(charts.chCum){charts.chCum.destroy();delete charts.chCum;}return;}
   var cam={cliente:'cli',grupo:'grupo',estilo:'estilo'}[CU.dim],tn={cliente:'Cliente',grupo:'Grupo',estilo:'Estilo'}[CU.dim],m={};
@@ -1371,11 +1376,18 @@ function pintarCumplimiento(rs){
   var cols=[{t:tn,k:'__k'},{t:'OP pendientes',k:'tot',tipo:'n0',tot:'suma'},{t:'No cumplen',k:'no',tipo:'n0',tot:'suma',cls:function(x){return x.no>0?'rojo':'';}},{t:'En riesgo',k:'riesgo',tipo:'n0',tot:'suma'},{t:'Cumplen',k:'ok',tipo:'n0',tot:'suma'},
     {t:'% que cumple',k:'pct',tipo:'pct',dec:0,tot:function(x){return pc(suma(x,'ok'),suma(x,'tot'));}},{t:'Prendas por encajar (no cumplen)',k:'fe',tipo:'n0',tot:'suma'}];
   pintarVista('tCumRes',cols,ents,{ident:[tn],tope:500});
-  var ord={no:0,riesgo:1,ok:2},lis=L.filter(function(s){return s.e!=='ok';}).sort(function(a,b){return ord[a.e]-ord[b.e]||a.dias-b.dias||String(a.op).localeCompare(String(b.op));});
+  var ord={no:0,riesgo:1,ok:2},sel=CU.sel;
+  var lis=L.filter(function(s){return sel==='ok'?s.e==='ok':sel==='no'?s.e==='no':sel==='riesgo'?s.e==='riesgo':sel==='cli'?(!!cliNo[s.cli]&&s.e!=='ok'):s.e!=='ok';})
+    .sort(function(a,b){return (sel==='cli'?String(a.cli).localeCompare(String(b.cli)):0)||ord[a.e]-ord[b.e]||a.dias-b.dias||String(a.op).localeCompare(String(b.op));});
+  var tl={ok:'OP que cumplen',no:'OP que no cumplen',riesgo:'OP en riesgo',cli:'OP que no cumplen o van en riesgo, de los clientes con atraso ('+cn.join(', ')+')'}[sel]||'OP que no cumplen o van en riesgo';
+  $('ptCumLis').textContent=tl+' · '+lis.length;
+  $('phCumLis').textContent=sel==='ok'?'OP pendientes que van al día con sus fechas meta; arriba la que vence primero. Toca otra tarjeta de arriba para ver otro grupo, o la misma para volver.':
+    sel?'Toca la misma tarjeta de arriba otra vez para volver a ver las que no cumplen y las que van en riesgo.':
+    'Primero las que ya vencieron, luego las que van en riesgo; dentro de cada grupo, la más atrasada arriba. Los días son contra la XFTY. Toca una tarjeta de arriba para ver solo ese grupo.';
   var cl=[{t:'Estado',k:function(s){return '<span class="pill '+CUE[s.e][2]+'">'+CUE[s.e][0]+'</span>';},tipo:'html'},{t:'OP',k:'op'},{t:'Cliente',k:'cli'},{t:'Grupo',k:'grupo'},{t:'Estilo',k:'estilo'},{t:'XFTY',k:'xfty',tipo:'fecha'},
     {t:'Contra la XFTY',k:function(s){return s.dias<0?'venció hace '+(-s.dias)+' días':'faltan '+s.dias+' días';},cls:function(s){return s.dias<0?'rojo':'';}},
     {t:'Motivo',k:'motivo',cls:'wrapc'},{t:'Requeridas',k:'req',tipo:'n0',tot:'suma'},{t:'Por encajar',k:'fe',tipo:'n0',tot:'suma'},{t:'% encajado',k:function(s){return pc(s.enc,s.req);},tipo:'pct',dec:0}];
-  pintarVista('tCumLis',cl,lis,{ident:['OP','Cliente','Grupo','Estilo'],tope:500,vacio:'Todas las OP pendientes van al día.'});
+  pintarVista('tCumLis',cl,lis,{ident:['OP','Cliente','Grupo','Estilo'],tope:500,vacio:sel==='ok'?'Ninguna OP pendiente cumple con los filtros elegidos.':'Todas las OP pendientes van al día.'});
   XLS.cum=[{titulo:'Cumplimiento por '+tn.toLowerCase(),cols:cols,rows:ents},{titulo:'OP que no cumplen o van en riesgo',cols:cl,rows:lis}];
 }
 
@@ -1487,6 +1499,8 @@ segs('segFlP',function(v){FL.p=v;render();});segs('segFlG',function(v){FL.g=v;re
 segs('segDim',function(v){SG.dim=v;SG.key=null;render();});$('selEnt').onchange=function(){SG.key=this.value;render();};
 $('fDesde').onchange=function(){F.desde=this.value;render();};$('fHasta').onchange=function(){F.hasta=this.value;render();};
 segs('fAtr',function(v){F.atras=v==='1';render();});segs('segCumDim',function(v){CU.dim=v;render();});
+$('kCum').addEventListener('click',function(e){var k=e.target.closest('.kpi');if(!k||!k.dataset.sel)return;CU.sel=CU.sel===k.dataset.sel?'':k.dataset.sel;render();
+  setTimeout(function(){var p=$('panCumLis');if(p)p.scrollIntoView({behavior:'smooth',block:'start'});},60);});
 segs('segVista',function(v){VISTA=v;try{localStorage.setItem('sopVista',v);}catch(e){}render();});
 [].forEach.call($('segVista').querySelectorAll('button'),function(b){b.classList.toggle('active',b.dataset.v===VISTA);});
 segs('segRuta',function(v){RUTA=v;render();});
