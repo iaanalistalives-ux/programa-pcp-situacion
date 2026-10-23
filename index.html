@@ -717,6 +717,8 @@ input.fecha.guardando{opacity:.5;}
 body.conModal{overflow:hidden;}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--petrol);color:#fff;padding:10px 18px;border-radius:10px;font-weight:700;font-size:14px;z-index:1100;display:none;box-shadow:0 8px 24px rgba(0,0,0,.25);}
 #toast.malo{background:var(--rose);}
+/* cumplimiento */
+.kpi.riesgo .banda{background:var(--tan);} .kpi.riesgo .v{color:#B45309;}
 /* tarjetas */
 .tscroll.tarjetas{max-height:none;overflow:visible;}
 .tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;margin-bottom:6px;}
@@ -802,6 +804,9 @@ tr.sub.subE td{background:var(--warm-light);color:var(--stone);}
     <input class="inp" id="fQ" type="search" placeholder="Buscar OP, grupo, estilo o P.O.">
     <select id="fCli"><option value="">Todos los clientes</option></select>
     <select id="fSem"><option value="">Todas las semanas XFTY</option></select>
+    <select id="fDesde" title="Mes de la XFTY: desde"></select>
+    <select id="fHasta" title="Mes de la XFTY: hasta"></select>
+    <div class="seg" id="fAtr" title="OP pendientes con XFTY anterior al rango"><button data-v="1" class="active">Con atrasadas anteriores</button><button data-v="0">Solo el rango</button></div>
     <div class="seg" id="fEnc">
       <button data-v="NO" class="active">Pendientes</button><button data-v="SI">Encajadas</button><button data-v="">Todas</button>
     </div>
@@ -815,6 +820,7 @@ tr.sub.subE td{background:var(--warm-light);color:var(--stone);}
 
   <div class="tabs" id="tabs">
     <button class="active" data-t="res">Resumen</button>
+    <button data-t="cum">Cumplimiento</button>
     <button data-t="seg">Seguimiento</button>
     <button data-t="sit">Reporte</button>
     <button data-t="cor">Corte</button>
@@ -841,6 +847,24 @@ tr.sub.subE td{background:var(--warm-light);color:var(--stone);}
         <div class="ph">Prendas en cada etapa según la semana de la XFTY de la OP. En tela = a producir aún sin girar; en corte = giradas aún no habilitadas; en confección = en costura LIVES y de servicio; en post costura = tránsito, inspección y acabado.</div>
         <div class="cwrap tall"><canvas id="chStock"></canvas></div>
         <div class="tscroll" style="margin-top:12px" id="tStock"></div></div>
+    </div>
+  </div>
+
+  <!-- CUMPLIMIENTO -->
+  <div class="tabpane" id="p-cum">
+    <div class="kpis" id="kCum"></div>
+    <div class="grid">
+      <div class="panel col12"><span class="tira riesgo"></span>
+        <div class="phead"><div><div class="pt">¿Cumplimos con el cliente?</div><div class="ph" id="phCum"></div></div>
+          <div class="flctl"><div class="seg" id="segCumDim"><button data-v="cliente" class="active">Cliente</button><button data-v="grupo">Grupo</button><button data-v="estilo">Estilo</button></div></div></div>
+        <div class="vacio" id="cumVacio" style="display:none">No hay OP pendientes con los filtros elegidos.</div>
+        <div class="cwrap" id="wCum"><canvas id="chCum"></canvas></div>
+        <div class="tscroll" id="tCumRes" style="margin-top:12px"></div></div>
+    </div>
+    <div class="grid">
+      <div class="panel col12"><span class="tira resultado"></span><div class="pt">OP que no cumplen o van en riesgo</div>
+        <div class="ph">Primero las que ya vencieron, luego las que van en riesgo; dentro de cada grupo, la más atrasada arriba. Los días son contra la XFTY.</div>
+        <div class="tscroll" id="tCumLis"></div></div>
     </div>
   </div>
 
@@ -956,7 +980,7 @@ function api(acc,p){
 }
 var $=function(id){return document.getElementById(id);};
 var D=[],PAR={},PUEDE=false,HOY=null,HISTN={};
-var F={q:'',cli:'',sem:'',enc:'NO'},TAB='res',VSIT='det',RUTA='Directo',VISTA='tar';
+var F={q:'',cli:'',sem:'',enc:'NO',desde:'',hasta:'',atras:true},TAB='res',VSIT='det',RUTA='Directo',VISTA='tar';
 try{VISTA=localStorage.getItem('sopVista')==='tab'?'tab':'tar';}catch(e){}
 var charts={},XLS={};
 var MES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Set','Oct','Nov','Dic'];
@@ -992,6 +1016,10 @@ function recalcXfty(r){
 /* ---------- filtros ---------- */
 function pasa(r,sinEnc){
   if(F.cli&&r.cliente_corto!==F.cli)return false;
+  var mk=r.xfty?mesKey(r.xfty):'';
+  if(mk&&!((!F.desde||mk>=F.desde)&&(!F.hasta||mk<=F.hasta))){
+    if(!(F.atras&&F.desde&&mk<F.desde&&r.encajado!=='SI'))return false;   /* atrasadas anteriores al rango */
+  }
   if(F.sem&&String(semKey(r))!==F.sem)return false;
   if(!sinEnc&&F.enc&&r.encajado!==F.enc)return false;
   if(F.q){var q=F.q.toUpperCase();
@@ -1296,6 +1324,61 @@ function pintarAcabado(rs){
   XLS.aca=[{titulo:'Acabado por mes de la fecha meta',cols:cm,rows:gm},{titulo:'Segundas por OP y color',cols:cs,rows:sg}];
 }
 
+/* ---------- CUMPLIMIENTO: ¿va al día con las fechas de PCP? ---------- */
+var ESTOP={},CU={dim:'cliente'};
+var CUE={no:['No cumple','#DC2626','ale'],riesgo:['En riesgo','#F59E0B','rev'],ok:['Cumple','#0F7A5A','ok']};
+function mesDe(k,d){var y=+k.slice(0,4),m=+k.slice(5,7)-1+d;return new Date(Date.UTC(y,m,1)).toISOString().slice(0,7);}
+function rangoTxt(){if(!F.desde&&!F.hasta)return '';return ' · '+(F.desde?mesTxt(F.desde):'inicio')+' a '+(F.hasta?mesTxt(F.hasta):'sin límite')+(F.atras&&F.desde?' (con atrasadas anteriores)':'');}
+/* Por OP, con todos sus colores. No cumple: la XFTY ya pasó y falta encajar. En riesgo: XFTY vigente, pero una etapa pasó su fecha meta sin completarse. */
+function calcEstados(){
+  var por={};ESTOP={};D.forEach(function(r){(por[r.op]=por[r.op]||[]).push(r);});
+  var h=dUTC(HOY),d1=PAR.dias_hito_corte,d2=PAR.dias_hito_costura,d3=PAR.dias_hito_acabado;
+  Object.keys(por).forEach(function(op){var rs=por[op],r0=rs[0],x=r0.xfty;
+    var fc=suma(rs,function(r){return Math.max(0,r.req_prod-r.habilitadas);}),fs=suma(rs,function(r){return Math.max(0,r.req_prod-r.confeccionadas);}),fe=suma(rs,function(r){return Math.max(0,r.req_prod-r.encajadas);});
+    var o={op:op,cli:r0.cliente_corto,grupo:r0.grupo,estilo:r0.estilo,po:r0.po,xfty:x,req:suma(rs,'requeridas'),enc:suma(rs,'encajadas'),fe:fe,dias:x?difDias(x,HOY):null};
+    if(!x||!rs.some(function(r){return r.encajado!=='SI';})){o.e='listo';ESTOP[op]=o;return;}
+    var xt=dUTC(x),m=[];
+    if(xt<h){o.e='no';o.motivo='XFTY vencida; faltan '+n0(fe)+' prendas por encajar';}
+    else{
+      if(xt-d1*864e5<h&&fc>0)m.push('Corte: faltan '+n0(fc)+' por habilitar (meta '+fF(iso(xt-d1*864e5))+')');
+      if(xt-d2*864e5<h&&fs>0)m.push('Costura: faltan '+n0(fs)+' por confeccionar (meta '+fF(iso(xt-d2*864e5))+')');
+      if(xt-d3*864e5<h&&fe>0)m.push('Acabado: faltan '+n0(fe)+' por encajar (meta '+fF(iso(xt-d3*864e5))+')');
+      o.e=m.length?'riesgo':'ok';o.motivo=m.join(' · ')||'Al día con sus fechas meta';}
+    ESTOP[op]=o;});
+}
+function cuentaEst(rows,e){var o={};rows.forEach(function(r){var s=ESTOP[r.op];if(s&&s.e===e)o[r.op]=1;});return Object.keys(o).length;}
+function pintarCumplimiento(rs){
+  var seen={},L=[];rs.forEach(function(r){var s=ESTOP[r.op];if(s&&s.e!=='listo'&&!seen[r.op]){seen[r.op]=1;L.push(s);}});
+  var n={no:0,riesgo:0,ok:0};L.forEach(function(s){n[s.e]++;});
+  var cliNo={};L.forEach(function(s){if(s.e==='no')cliNo[s.cli]=1;});var cn=Object.keys(cliNo).sort();
+  var tot=L.length,feNo=suma(L.filter(function(s){return s.e==='no';}),'fe');
+  $('phCum').textContent='Mide si cada OP pendiente va al día con las fechas de PCP (la XFTY que PCP escribe; si no hay, la del sistema). No cumple: la XFTY ya pasó y la OP no está encajada completa. En riesgo: la XFTY sigue vigente, pero una etapa ya pasó su fecha meta sin completarse (corte XFTY − '+PAR.dias_hito_corte+' días, costura − '+PAR.dias_hito_costura+', acabado − '+PAR.dias_hito_acabado+'). Cumple: todo lo demás. Mide si va al día hoy; el cumplimiento real (despachado a tiempo) necesita la fecha real de despacho.';
+  $('kCum').innerHTML=!tot?kpi('neutro','OP pendientes','—','No hay OP pendientes con los filtros elegidos'):
+    kpi('hero','OP que cumplen',String(n.ok),fp(pc(n.ok,tot),0)+' de '+tot+' OP pendientes, al día con sus fechas meta')+
+    kpi(n.no?'alert':'neutro','OP que no cumplen',String(n.no),'XFTY vencida y sin encajar · '+n0(feNo)+' prendas por encajar')+
+    kpi(n.riesgo?'riesgo':'neutro','OP en riesgo',String(n.riesgo),'XFTY vigente, pero una etapa ya pasó su fecha meta')+
+    kpi(cn.length?'alert':'neutro','Clientes con OP que no cumplen',String(cn.length),cn.length?cn.join(' · '):'Ninguno');
+  $('cumVacio').style.display=tot?'none':'block';$('wCum').style.display=tot?'':'none';
+  if(!tot){$('tCumRes').innerHTML='';$('tCumLis').innerHTML='';if(charts.chCum){charts.chCum.destroy();delete charts.chCum;}return;}
+  var cam={cliente:'cli',grupo:'grupo',estilo:'estilo'}[CU.dim],tn={cliente:'Cliente',grupo:'Grupo',estilo:'Estilo'}[CU.dim],m={};
+  L.forEach(function(s){var k=s[cam];m[k]=m[k]||{__k:k,no:0,riesgo:0,ok:0,fe:0};m[k][s.e]++;if(s.e==='no')m[k].fe+=s.fe;});
+  var ents=Object.keys(m).map(function(k){var x=m[k];x.tot=x.no+x.riesgo+x.ok;x.pct=pc(x.ok,x.tot);return x;}).sort(function(a,b){return b.no-a.no||b.riesgo-a.riesgo||b.tot-a.tot;});
+  var top=ents.slice(0,15);
+  $('wCum').style.height=Math.max(240,80+top.length*30)+'px';
+  nuevoChart('chCum',{type:'bar',data:{labels:top.map(function(x){return x.__k+' · '+x.tot+' OP';}),datasets:['no','riesgo','ok'].map(function(e){return {label:CUE[e][0],data:top.map(function(x){return x[e];}),backgroundColor:CUE[e][1],stack:'a'};})},
+    options:{indexAxis:'y',animation:{duration:600},plugins:{legend:LEYENDA,tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+c.parsed.x+' OP';}}}},
+      scales:{x:{stacked:true,ticks:{precision:0},title:{display:true,text:'OP pendientes'}},y:{stacked:true,grid:{display:false}}}}});
+  var cols=[{t:tn,k:'__k'},{t:'OP pendientes',k:'tot',tipo:'n0',tot:'suma'},{t:'No cumplen',k:'no',tipo:'n0',tot:'suma',cls:function(x){return x.no>0?'rojo':'';}},{t:'En riesgo',k:'riesgo',tipo:'n0',tot:'suma'},{t:'Cumplen',k:'ok',tipo:'n0',tot:'suma'},
+    {t:'% que cumple',k:'pct',tipo:'pct',dec:0,tot:function(x){return pc(suma(x,'ok'),suma(x,'tot'));}},{t:'Prendas por encajar (no cumplen)',k:'fe',tipo:'n0',tot:'suma'}];
+  pintarVista('tCumRes',cols,ents,{ident:[tn],tope:500});
+  var ord={no:0,riesgo:1,ok:2},lis=L.filter(function(s){return s.e!=='ok';}).sort(function(a,b){return ord[a.e]-ord[b.e]||a.dias-b.dias||String(a.op).localeCompare(String(b.op));});
+  var cl=[{t:'Estado',k:function(s){return '<span class="pill '+CUE[s.e][2]+'">'+CUE[s.e][0]+'</span>';},tipo:'html'},{t:'OP',k:'op'},{t:'Cliente',k:'cli'},{t:'Grupo',k:'grupo'},{t:'Estilo',k:'estilo'},{t:'XFTY',k:'xfty',tipo:'fecha'},
+    {t:'Contra la XFTY',k:function(s){return s.dias<0?'venció hace '+(-s.dias)+' días':'faltan '+s.dias+' días';},cls:function(s){return s.dias<0?'rojo':'';}},
+    {t:'Motivo',k:'motivo',cls:'wrapc'},{t:'Requeridas',k:'req',tipo:'n0',tot:'suma'},{t:'Por encajar',k:'fe',tipo:'n0',tot:'suma'},{t:'% encajado',k:function(s){return pc(s.enc,s.req);},tipo:'pct',dec:0}];
+  pintarVista('tCumLis',cl,lis,{ident:['OP','Cliente','Grupo','Estilo'],tope:500,vacio:'Todas las OP pendientes van al día.'});
+  XLS.cum=[{titulo:'Cumplimiento por '+tn.toLowerCase(),cols:cols,rows:ents},{titulo:'OP que no cumplen o van en riesgo',cols:cl,rows:lis}];
+}
+
 /* ---------- SEGUIMIENTO: cliente, grupo, estilo u OP ---------- */
 var SG={dim:'cliente',key:null};
 var DIMS={cliente:{f:function(r){return r.cliente_corto;},t:'Cliente'},grupo:{f:function(r){return r.grupo;},t:'Grupo'},estilo:{f:function(r){return r.estilo;},t:'Estilo'},op:{f:function(r){return r.op;},t:'OP'}};
@@ -1308,7 +1391,7 @@ function camposSit(){var c=COLS_SIT.filter(function(c){return c.tot==='suma'||ty
   return c.concat(['requeridas','corte_mermas','habilitadas','confeccionadas','post_cost_segundas','encajadas']);}
 function pintarSeguimiento(rs){
   var d=DIMS[SG.dim],ents=agrupar(rs,d.f,CSG);
-  ents.forEach(function(x){x.por_enc=suma(x.__rows,function(r){return Math.max(0,r.req_prod-r.encajadas);});x.nop=nOps(x.__rows);});
+  ents.forEach(function(x){x.por_enc=suma(x.__rows,function(r){return Math.max(0,r.req_prod-r.encajadas);});x.nop=nOps(x.__rows);x.ncum=cuentaEst(x.__rows,'no');x.nries=cuentaEst(x.__rows,'riesgo');});
   ents.sort(function(a,b){return b.por_enc-a.por_enc;});
   var vac=!ents.length;$('segVacio').style.display=vac?'block':'none';$('segCuerpo').style.display=vac?'none':'';$('segDet').style.display=vac?'none':'';
   $('ptSegA').textContent='Avance por '+d.t.toLowerCase();
@@ -1327,7 +1410,7 @@ function pintarSeguimiento(rs){
     options:{indexAxis:'y',animation:{duration:600},plugins:{legend:LEYENDA,tooltip:{callbacks:{title:function(it){return top[it[0].dataIndex].__k;},label:function(c){return c.dataset.label+': '+n0(c.dataset.abs[c.dataIndex])+' ('+n1(c.parsed.x)+' %)';}}}},
       onClick:function(e,els){if(els.length){SG.key=top[els[0].index].__k;setTimeout(render,0);}},onHover:function(e,els){if(e.native&&e.native.target)e.native.target.style.cursor=els.length?'pointer':'default';},
       scales:{x:{stacked:true,max:100,ticks:{callback:function(v){return v+' %';}}},y:{stacked:true,grid:{display:false}}}}});
-  var cols=[{t:d.t,k:'__k'},{t:'OP',k:'nop',tipo:'n0',tot:'suma'},{t:'Requeridas',k:'requeridas',tipo:'n0',tot:'suma'},{t:'Por encajar',k:'por_enc',tipo:'n0',tot:'suma'},
+  var cols=[{t:d.t,k:'__k'},{t:'OP',k:'nop',tipo:'n0',tot:'suma'},{t:'Requeridas',k:'requeridas',tipo:'n0',tot:'suma'},{t:'Por encajar',k:'por_enc',tipo:'n0',tot:'suma'},{t:'OP que no cumplen',k:'ncum',tipo:'n0',tot:'suma',cls:function(x){return x.ncum>0?'rojo':'';}},{t:'OP en riesgo',k:'nries',tipo:'n0',tot:'suma'},
     pctCol('% habilitado','habilitadas','requeridas'),pctCol('% confeccionado','confeccionadas','requeridas'),pctCol('% encajado','encajadas','requeridas'),
     {t:'Estado',k:function(x){return dot(pc(x.encajadas,x.requeridas));},tipo:'html'},{t:'Minutos por cortar',k:'min_por_cortar',tipo:'n0',tot:'suma'},{t:'Minutos por costurar',k:'min_por_costurar',tipo:'n0',tot:'suma'}];
   pintarVista('tSegRes',cols,ents,{ident:[d.t],tope:500});
@@ -1362,7 +1445,7 @@ function pintarSeguimiento(rs){
 function render(){
   var rs=filas();
   pintarKpis(rs);
-  pintarResumen(rs);pintarSeguimiento(rs);pintarSituacion(rs);pintarCorte(rs);pintarCostura(rs);pintarAcabado(rs);
+  pintarResumen(rs);pintarCumplimiento(rs);pintarSeguimiento(rs);pintarSituacion(rs);pintarCorte(rs);pintarCostura(rs);pintarAcabado(rs);
   Object.keys(charts).forEach(function(k){try{charts[k].resize();}catch(e){}});
   plegarTablasEnCelular();
 }
@@ -1384,6 +1467,12 @@ function llenarSelects(){
   $('fCli').innerHTML='<option value="">Todos los clientes</option>'+Object.keys(cl).sort().map(function(c){return '<option>'+esc(c)+'</option>';}).join('');
   $('fSem').innerHTML='<option value="">Todas las semanas XFTY</option>'+Object.keys(sm).map(Number).sort(function(a,b){return a-b;}).map(function(k){return '<option value="'+k+'">'+semTxt(k)+'</option>';}).join('');
   $('fCli').value=F.cli;$('fSem').value=F.sem;
+  var ms={};D.forEach(function(r){if(r.xfty)ms[mesKey(r.xfty)]=1;});ms[F.desde]=1;ms[F.hasta]=1;
+  var ks=Object.keys(ms).filter(Boolean).sort(),a=ks[0],z=ks[ks.length-1],all=[];
+  for(var k=a;k<=z;k=mesDe(k,1))all.push(k);
+  $('fDesde').innerHTML='<option value="">Desde el inicio</option>'+all.map(function(k){return '<option value="'+k+'">Desde '+mesTxt(k)+'</option>';}).join('');
+  $('fHasta').innerHTML='<option value="">Sin límite</option>'+all.map(function(k){return '<option value="'+k+'">Hasta '+mesTxt(k)+'</option>';}).join('');
+  $('fDesde').value=F.desde;$('fHasta').value=F.hasta;
 }
 function segs(id,fn){$(id).addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
   [].forEach.call($(id).querySelectorAll('button'),function(x){x.classList.toggle('active',x===b);});fn(b.dataset.v);});}
@@ -1396,6 +1485,8 @@ segs('fEnc',function(v){F.enc=v;render();});
 segs('segSit',function(v){VSIT=v;render();});
 segs('segFlP',function(v){FL.p=v;render();});segs('segFlG',function(v){FL.g=v;render();});segs('segFlA',function(v){FL.a=v;render();});
 segs('segDim',function(v){SG.dim=v;SG.key=null;render();});$('selEnt').onchange=function(){SG.key=this.value;render();};
+$('fDesde').onchange=function(){F.desde=this.value;render();};$('fHasta').onchange=function(){F.hasta=this.value;render();};
+segs('fAtr',function(v){F.atras=v==='1';render();});segs('segCumDim',function(v){CU.dim=v;render();});
 segs('segVista',function(v){VISTA=v;try{localStorage.setItem('sopVista',v);}catch(e){}render();});
 [].forEach.call($('segVista').querySelectorAll('button'),function(b){b.classList.toggle('active',b.dataset.v===VISTA);});
 segs('segRuta',function(v){RUTA=v;render();});
@@ -1409,7 +1500,7 @@ function xcol(c,i){var tipo={n0:'entero',n1:'decimal',n2:'decimal',pct:'porcenta
 function xfil(c,r){var v=typeof c.k==='function'?c.k(r):r[c.k];if(c.tipo==='pct')return v==null?null:v/100;if(c.tipo==='html')return '';return v;}
 window.LS_XLS={clase:'btn',ancla:function(){return $('btnImp');},datos:function(){
   if(!D.length)throw new Error('los datos todavía están cargando');
-  var nom={res:'Resumen',seg:'Seguimiento',sit:'Reporte',fec:'Fechas XFTY y despacho',cor:'Corte',cos:'Costura e inspección',aca:'Acabado y segundas'};
+  var nom={res:'Resumen',cum:'Cumplimiento',seg:'Seguimiento',sit:'Reporte',fec:'Fechas XFTY y despacho',cor:'Corte',cos:'Costura e inspección',aca:'Acabado y segundas'};
   var sec=(XLS[TAB]||[]).map(function(s){var cs=s.cols.filter(function(c){return c.tipo!=='html';});
     return {titulo:s.titulo,columnas:cs.map(xcol),filas:s.rows.filter(function(r){return !r.__sub;}).map(function(r){var o={};cs.forEach(function(c,i){o['c'+i]=xfil(c,r);});return o;})};});
   var rs=filas();
@@ -1419,7 +1510,7 @@ window.LS_XLS={clase:'btn',ancla:function(){return $('btnImp');},datos:function(
     ['confec_lives','Conf. LIVES','entero'],['confec_servicio','Conf. servicio','entero'],['confeccionadas','Confeccionadas','entero'],['transito','Tránsito','entero'],['en_insp','Inspección','entero'],
     ['post_cost_segundas','Segundas','entero'],['acabados_lives','Acabados LIVES','entero'],['encajadas','Encajadas','entero'],['despachadas','Despachadas','entero'],
     ['min_por_cortar','Minutos por cortar','decimal'],['min_por_costurar','Minutos por costurar','decimal'],['en_tela','En tela','entero'],['en_corte','En corte','entero'],['en_confeccion','En confección','entero'],['en_post_costura','En post costura','entero'],['encajado','Encajado','texto']];
-  return {titulo:'Programa PCP · Situación de OP',sub:nom[TAB]+(F.cli?' · '+F.cli:'')+(F.sem?' · '+semTxt(+F.sem):'')+' · '+({NO:'pendientes',SI:'encajadas','':'todas'}[F.enc]),
+  return {titulo:'Programa PCP · Situación de OP',sub:nom[TAB]+rangoTxt()+(F.cli?' · '+F.cli:'')+(F.sem?' · '+semTxt(+F.sem):'')+' · '+({NO:'pendientes',SI:'encajadas','':'todas'}[F.enc]),
     formula:'Hoja Resumen: lo que se ve en la pestaña '+nom[TAB]+' con los filtros puestos. Hoja Detalle: cada OP y color con los mismos filtros.',origen:'Programa PCP',
     resumen:sec,detalle:{congelarCols:2,nota:'Una fila por OP y color.',columnas:DC.map(function(d){return {campo:d[0],titulo:d[1],tipo:d[2]};}),filas:rs}};
 }};
@@ -1430,7 +1521,8 @@ function cargar(){
     if(!j||!j.ok)throw new Error(j&&j.error||'No se pudo leer');
     HOY=j.hoy;PAR=j.parametros||{};PUEDE=!!j.puede_registrar;HISTN=j.historial_n||{};
     D=(j.filas||[]).map(function(r){r.desp_color=r.despacho_es_color?r.despacho:null;return r;});
-    llenarSelects();render();
+    var m0=HOY.slice(0,7);F.desde=mesDe(m0,-1);F.hasta=mesDe(m0,6);   /* por defecto: el mes anterior y 6 meses adelante */
+    calcEstados();llenarSelects();render();
   }).catch(function(e){$('err').style.display='block';$('err').textContent='No se pudieron cargar los datos: '+e.message+'. Revisa la conexión y vuelve a abrir la pantalla.';});
 }
 cargar();
