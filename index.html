@@ -714,6 +714,31 @@ input.fecha.guardando{opacity:.5;}
 body.conModal{overflow:hidden;}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--petrol);color:#fff;padding:10px 18px;border-radius:10px;font-weight:700;font-size:14px;z-index:1100;display:none;box-shadow:0 8px 24px rgba(0,0,0,.25);}
 #toast.malo{background:var(--rose);}
+/* tarjetas */
+.tscroll.tarjetas{max-height:none;overflow:visible;}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;margin-bottom:6px;}
+.gh{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--petrol);margin:16px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--warm);}
+.gh:first-child{margin-top:0;}
+.tarj{background:var(--card);border:1px solid var(--warm);border-radius:10px;padding:12px 14px;box-shadow:var(--sh);min-width:0;transition:box-shadow .15s;}
+.tarj:hover{box-shadow:var(--sh-h);}
+.tarj.tot{background:var(--petrol);border-color:var(--petrol);color:#fff;grid-column:1/-1;}
+.tarj.tot .th b,.tarj.tot .m b{color:#fff;} .tarj.tot .m span{color:#8FB3AC;}
+.tarj.tot .tm{grid-template-columns:repeat(auto-fit,minmax(130px,1fr));}
+.tarj .th{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.tarj .th b{font-size:15px;color:var(--petrol);margin-right:auto;}
+.tarj .ts{font-size:12px;color:var(--stone);margin-top:2px;overflow-wrap:anywhere;}
+.tarj .barra{display:flex;height:9px;border-radius:5px;overflow:hidden;background:var(--warm-light);margin:10px 0 4px;}
+.tarj .barra i{display:block;height:100%;}
+.tarj .tm{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;margin-top:10px;}
+.tarj .m span{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--stone);}
+.tarj .m b{font-size:14px;color:#333;}
+.tarj .m b.rojo{color:var(--rose);}
+.tarj .ruta{display:flex;flex-wrap:wrap;align-items:center;gap:3px 4px;margin-top:10px;padding-top:8px;border-top:1px dashed var(--warm);}
+.tarj .ruta span{font-size:11px;font-weight:700;background:var(--warm-light);color:var(--stone);border-radius:20px;padding:2px 8px;}
+.tarj .ruta em{font-style:normal;color:var(--stone);font-size:12px;}
+.ley{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--stone);margin:0 0 10px;}
+.ley i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px;}
+.xl{font-size:10.5px;font-weight:700;background:var(--warm-light);color:var(--stone);border-radius:20px;padding:2px 9px;margin-left:8px;text-transform:uppercase;letter-spacing:.3px;vertical-align:2px;white-space:nowrap;}
 /* celular */
 @media(max-width:900px){.wrap{padding:14px 14px 36px;}.kpis{grid-template-columns:repeat(2,1fr);}.cwrap{height:300px;}}
 @media(max-width:600px){
@@ -763,10 +788,10 @@ body.conModal{overflow:hidden;}
     <div class="seg" id="fEnc">
       <button data-v="NO" class="active">Pendientes</button><button data-v="SI">Encajadas</button><button data-v="">Todas</button>
     </div>
+    <div class="seg" id="segVista"><button data-v="tab">Tablas</button><button data-v="tar" class="active">Tarjetas</button></div>
     <span class="spacer"></span>
     <div class="lsAcc"><button class="btn" id="btnImp" type="button" onclick="window.print()">Imprimir</button></div>
   </div>
-  <div class="aviso" id="aviso"></div>
   <div class="err" id="err"></div>
 
   <div class="kpis" id="kpis"></div>
@@ -774,7 +799,6 @@ body.conModal{overflow:hidden;}
   <div class="tabs" id="tabs">
     <button class="active" data-t="res">Resumen</button>
     <button data-t="sit">Reporte</button>
-    <button data-t="fec">Fechas XFTY y despacho</button>
     <button data-t="cor">Corte</button>
     <button data-t="cos">Costura e inspección</button>
     <button data-t="aca">Acabado y segundas</button>
@@ -809,22 +833,12 @@ body.conModal{overflow:hidden;}
     </div>
   </div>
 
-  <!-- FECHAS -->
-  <div class="tabpane" id="p-fec">
-    <div class="grid">
-      <div class="panel col12"><span class="tira meta"></span>
-        <div class="phead"><div><div class="pt">XFTY y fecha de despacho de cada OP</div>
-          <div class="ph">Lo que se escribe aquí se guarda solo y ninguna actualización del sistema lo cambia. La XFTY mueve la semana y las fechas meta de corte (XFTY − <span class="pD1"></span> días), costura (− <span class="pD2"></span>) y acabado (− <span class="pD3"></span>). Si la OP no tiene XFTY se usa la fecha de despacho del sistema. Vacía una fecha para volver a la del sistema.</div></div>
-          <div class="seg" id="segFec"><button data-v="" class="active">Todas</button><button data-v="sin">Sin XFTY</button><button data-v="dif">Despacho distinto al sistema</button></div></div>
-        <div class="tscroll" id="tFec"></div></div>
-    </div>
-  </div>
 
   <!-- CORTE -->
   <div class="tabpane" id="p-cor">
     <div class="grid">
       <div class="panel col12"><span class="tira volumen"></span>
-        <div class="phead"><div><div class="pt">Cola de corte</div>
+        <div class="phead"><div><div class="pt">Cola de corte<span class="xl">Excel · STOCK POR PROCESO</span></div>
           <div class="ph" id="phCola"></div></div>
           <div class="seg" id="segRuta"><button data-v="Directo" class="active">Corte directo</button><button data-v="Paños">Paños (lavado)</button></div></div>
         <div class="tscroll" id="tCola"></div></div>
@@ -835,7 +849,7 @@ body.conModal{overflow:hidden;}
         <div class="tscroll" id="tCorMes"></div></div>
     </div>
     <div class="grid">
-      <div class="panel col12"><span class="tira resultado"></span><div class="pt">Habilitado por grupo, estilo y color</div>
+      <div class="panel col12"><span class="tira resultado"></span><div class="pt">Habilitado por grupo, estilo y color<span class="xl">Excel · LUISA</span></div>
         <div class="ph">% habilitado = habilitadas ÷ requeridas. Mermas de corte = cortadas − habilitadas de corte.</div>
         <div class="tscroll" id="tHab"></div></div>
     </div>
@@ -849,12 +863,12 @@ body.conModal{overflow:hidden;}
         <div class="tscroll" id="tCosMes"></div></div>
     </div>
     <div class="grid">
-      <div class="panel col12"><span class="tira riesgo"></span><div class="pt">Programa de inspección</div>
+      <div class="panel col12"><span class="tira riesgo"></span><div class="pt">Programa de inspección<span class="xl">Excel · PROGRAMA DE INSPECCION</span></div>
         <div class="ph">OP sin encajar con prendas en servicio de costura, en tránsito o en inspección. Total = las tres sumadas.</div>
         <div class="tscroll" id="tInsp"></div></div>
     </div>
     <div class="grid">
-      <div class="panel col12"><span class="tira volumen"></span><div class="pt">Programa de transfer</div>
+      <div class="panel col12"><span class="tira volumen"></span><div class="pt">Programa de transfer<span class="xl">Excel · PROGRAMA TRANSFER</span></div>
         <div class="ph">OP cuya ruta incluye Transfer. Por transferir = confección servicio + tránsito + confección LIVES + (a producir − habilitadas), igual que la tabla dinámica del Excel.</div>
         <div class="tscroll" id="tTrans"></div></div>
     </div>
@@ -868,14 +882,13 @@ body.conModal{overflow:hidden;}
         <div class="tscroll" id="tAcaMes"></div></div>
     </div>
     <div class="grid">
-      <div class="panel col12"><span class="tira riesgo"></span><div class="pt">Segundas por OP y color</div>
+      <div class="panel col12"><span class="tira riesgo"></span><div class="pt">Segundas por OP y color<span class="xl">Excel · REPORTE DE SEGUNDAS</span></div>
         <div class="ph" id="phSeg"></div>
         <div class="tscroll" id="tSeg"></div></div>
     </div>
   </div>
 </div>
 
-<div class="modal" id="modal"><div class="caja"><div class="mcab"><b id="mTit"></b><button class="btn" type="button" id="mCerrar">✕ Cerrar</button></div><div class="mcuerpo" id="mCuerpo"></div></div></div>
 <div id="toast"></div>
 
 <script>
@@ -889,7 +902,8 @@ function api(acc,p){
 }
 var $=function(id){return document.getElementById(id);};
 var D=[],PAR={},PUEDE=false,HOY=null,HISTN={};
-var F={q:'',cli:'',sem:'',enc:'NO'},TAB='res',VSIT='det',VFEC='',RUTA='Directo';
+var F={q:'',cli:'',sem:'',enc:'NO'},TAB='res',VSIT='det',RUTA='Directo',VISTA='tar';
+try{VISTA=localStorage.getItem('sopVista')==='tab'?'tab':'tar';}catch(e){}
 var charts={},XLS={};
 var MES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Set','Oct','Nov','Dic'];
 
@@ -958,6 +972,60 @@ function pintarTabla(id,cols,rows,op){
 function hayFiltro(){return !!(F.q||F.cli||F.sem);}
 function pctCol(t,num,den,dec){return {t:t,k:function(r){return pc(r[num],r[den]);},tipo:'pct',dec:dec,tot:function(rs){return pc(suma(rs,num),suma(rs,den));}};}
 
+/* ---------- vista: tablas o tarjetas ---------- */
+var SEG=[['Encajadas','encajadas','#0F7A5A'],['Post costura','en_post_costura','#F59E0B'],['Confección','en_confeccion','#10B981'],['En corte','en_corte','#4E6B78'],['En tela','en_tela','#B45309']];
+var LEY='<div class="ley">'+SEG.map(function(s){return '<span><i style="background:'+s[2]+'"></i>'+s[0]+'</span>';}).join('')+'</div>';
+var TAR={
+  tStock:{ident:['Semana XFTY'],barra:true,leyenda:LEY},
+  tCola:{ident:['OP','Grupo','Estilo','Color'],tope:500},
+  tCorMes:{ident:['Mes meta corte']},
+  tHab:{ident:['OP','Grupo','Estilo','Color'],tope:500},
+  tCosMes:{ident:['Mes meta costura']},
+  tInsp:{ident:['OP','Grupo','Estilo','Color'],tope:500},
+  tTrans:{ident:['OP','Grupo','Estilo','Color'],tope:500},
+  tAcaMes:{ident:['Mes meta acabado']},
+  tSeg:{ident:['OP','Grupo','Estilo','Color'],tope:500}};
+function filaTotal(cols,rows){var tr={},base=rows.filter(function(x){return !x.__sub;});
+  cols.forEach(function(c){if(c.tot==='suma')tr[c.k]=suma(base,c.k);else if(typeof c.tot==='function')tr[typeof c.k==='string'?c.k:c.t]=c.tot(base);});return tr;}
+function barraHtml(r){var tot=0;SEG.forEach(function(s){tot+=+r[s[1]]||0;});
+  return '<div class="barra">'+SEG.map(function(s){var v=+r[s[1]]||0;return tot&&v?'<i style="width:'+(v/tot*100)+'%;background:'+s[2]+'" title="'+s[0]+': '+n0(v)+'"></i>':'';}).join('')+'</div>';}
+function mm(l,v,cls){return v==null||v===''?'':'<div class="m"><span>'+l+'</span><b'+(cls?' class="'+cls+'"':'')+'>'+v+'</b></div>';}
+function cardOP(r){
+  var venc=r.xfty&&r.xfty<HOY&&r.encajado!=='SI';
+  return '<div class="tarj"><div class="th"><b>OP '+esc(r.op)+'</b>'+(venc?'<span class="pill ale">XFTY vencida</span>':'')+'<span class="pill low">'+esc(r.cliente_corto)+'</span></div>'+
+    '<div class="ts">'+esc(r.grupo)+' · '+esc(r.estilo)+'</div><div class="ts">'+esc(r.comb)+(r.po?' · P.O. '+esc(r.po):'')+'</div>'+barraHtml(r)+
+    '<div class="tm">'+mm('Requeridas',n0(r.requeridas))+mm('Encajado',fp(pc(r.encajadas,r.requeridas)))+mm('Habilitado',fp(pc(r.habilitadas,r.requeridas)))+mm('Confeccionado',fp(pc(r.confeccionadas,r.requeridas)))+
+    mm('XFTY',fF(r.xfty)+(r.sin_xfty?' (sistema)':''),venc?'rojo':'')+mm('Despacho',fF(r.despacho))+'</div>'+
+    (r.ruta?'<div class="ruta">'+String(r.ruta).split(',').map(function(x){return '<span>'+esc(x.trim())+'</span>';}).join('<em>›</em>')+'</div>':'')+'</div>';
+}
+function cardGen(cols,r,op){
+  var id=op.ident||[cols[0].t],ic=id.map(function(t){return cols.filter(function(c){return c.t===t;})[0];}).filter(Boolean);
+  var tit=ic.length?celda(ic[0],r):'',sub=ic.slice(1).map(function(c){return celda(c,r);}).filter(function(x){return x;}).join(' · ');
+  var m=cols.filter(function(c){return ic.indexOf(c)<0;}).map(function(c){var v=celda(c,r),cl=typeof c.cls==='function'?c.cls(r):c.cls;return mm(c.t,v,cl&&/rojo/.test(cl)?'rojo':'');}).join('');
+  return '<div class="tarj"><div class="th"><b>'+(id[0]==='OP'?'OP ':'')+tit+'</b></div>'+(sub?'<div class="ts">'+sub+'</div>':'')+(op.barra?barraHtml(r):'')+'<div class="tm">'+m+'</div></div>';
+}
+function pintarTarjetas(id,cols,rows,op){
+  var el=$(id),rr=rows.filter(function(r){return !r.__sub;});
+  if(!rr.length){el.innerHTML='<div class="vacio">'+(op.vacio||'No hay OP que cumplan los filtros elegidos.')+'</div>';return;}
+  var tope=op.tope&&rr.length>op.tope&&!hayFiltro()?op.tope:rr.length,h=op.leyenda||'',act=null,abierto=false;
+  var tr=filaTotal(cols,rr),tm='';
+  cols.forEach(function(c,j){if(j===0)return;var kk=typeof c.k==='string'?c.k:c.t;if(kk in tr)tm+=mm(c.t,celda(Object.assign({},c,{k:kk}),tr));});
+  if(tm&&op.total!==false)h+='<div class="tgrid"><div class="tarj tot"><div class="th"><b>Total</b></div><div class="tm">'+tm+'</div></div></div>';
+  for(var i=0;i<tope;i++){var r=rr[i];
+    if(op.grupo){var g=op.grupo(r);if(g!==act){if(abierto)h+='</div>';h+='<div class="gh">'+esc(g)+'</div><div class="tgrid">';act=g;abierto=true;}}
+    else if(!abierto){h+='<div class="tgrid">';abierto=true;}
+    h+=op.card?op.card(r):cardGen(cols,r,op);}
+  if(abierto)h+='</div>';
+  if(tope<rr.length)h+='<div class="lsTope500">Se muestran los '+tope+' registros de '+rr.length.toLocaleString('es-PE')+'. Usa los filtros para ver los demás.</div>';
+  el.innerHTML=h;
+}
+function pintarVista(id,cols,rows,op){
+  op=Object.assign({},TAR[id]||{},op||{});var el=$(id),tar=VISTA==='tar';
+  el.classList.toggle('tarjetas',tar);
+  if(tar)pintarTarjetas(id,cols,rows,op);
+  else pintarTabla(id,cols,rows,{vacio:op.vacio,tope:op.tope});
+}
+
 /* ---------- agrupar ---------- */
 function agrupar(rows,claveF,campos){
   var m={},orden=[];
@@ -978,7 +1046,7 @@ function pintarKpis(rs){
     kpi('','Encajado',fp(pc(enc,req)),n0(enc)+' encajadas de '+n0(req)+' requeridas')+
     kpi('neutro','Minutos por cortar',n0(suma(rs,'min_por_cortar')),n0(suma(rs,function(r){return Math.max(0,r.req_prod-r.cortado);}))+' prendas aún sin cortar')+
     kpi('neutro','Minutos por costurar',n0(suma(rs,'min_por_costurar')),n0(suma(rs,function(r){return Math.max(0,r.req_prod-r.confeccionadas);}))+' prendas aún sin confeccionar')+
-    kpi(Object.keys(sinx).length?'alert':'neutro','OP sin XFTY',String(Object.keys(sinx).length),'usan la fecha de despacho del sistema hasta que se escriba la XFTY');
+    kpi(Object.keys(sinx).length?'alert':'neutro','OP sin XFTY',String(Object.keys(sinx).length),'usan la fecha de despacho del sistema hasta que PCP escriba la XFTY');
 }
 
 /* ---------- gráficos ---------- */
@@ -1032,14 +1100,14 @@ function pintarResumen(rs){
       scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,beginAtZero:true,ticks:{callback:function(v){return n0(v);}}}}},plugins:[etiquetaTotal]});
   var cols=[{t:'Semana XFTY',k:function(r){return semTxt(r.__k);}},{t:'Requeridas',k:'requeridas',tipo:'n0',tot:'suma'}].concat(S.map(function(s){return {t:s[0],k:s[1],tipo:'n0',tot:'suma'};}))
     .concat([{t:'% encajado',k:function(r){return pc(r.encajadas,r.requeridas);},tipo:'pct',tot:function(x){return pc(suma(x,'encajadas'),suma(x,'requeridas'));}}]);
-  pintarTabla('tStock',cols,g);
+  pintarVista('tStock',cols,g);
   XLS.res=[{titulo:'Stock por proceso por semana XFTY',cols:cols,rows:g}];
 }
 
 /* ---------- SITUACIÓN ---------- */
 var COLS_SIT=[
   {t:'Sem',k:function(r){return r.__sub?'':semTxt(semKey(r));}},{t:'Cliente',k:'cliente_corto'},{t:'Grupo',k:'grupo'},{t:'Estilo',k:'estilo'},{t:'OP',k:'op'},{t:'Color',k:'comb'},
-  {t:'XFTY',k:'xfty',tipo:'fecha'},{t:'Requeridas',k:'requeridas',tipo:'n0',tot:'suma'},{t:'A producir',k:'req_prod',tipo:'n0',tot:'suma'},
+  {t:'XFTY',k:'xfty',tipo:'fecha'},{t:'Despacho',k:'despacho',tipo:'fecha'},{t:'Requeridas',k:'requeridas',tipo:'n0',tot:'suma'},{t:'A producir',k:'req_prod',tipo:'n0',tot:'suma'},
   {t:'Girado',k:'girado',tipo:'n0',tot:'suma'},{t:'Cortado',k:'cortado',tipo:'n0',tot:'suma'},{t:'Merma de corte',k:'corte_mermas',tipo:'n0',tot:'suma'},
   pctCol('% merma','corte_mermas','requeridas',2),{t:'Habilitadas',k:'habilitadas',tipo:'n0',tot:'suma'},pctCol('% habilit.','habilitadas','requeridas'),
   {t:'Conf. LIVES',k:'confec_lives',tipo:'n0',tot:'suma'},{t:'Conf. servicio',k:'confec_servicio',tipo:'n0',tot:'suma'},{t:'Confeccionadas',k:'confeccionadas',tipo:'n0',tot:'suma'},
@@ -1063,80 +1131,13 @@ function pintarSituacion(rs){
   var det=VSIT==='det',cols=det?COLS_SIT:COLS_PRI;
   var campos=cols.filter(function(c){return c.tot==='suma'||typeof c.tot==='function';}).map(function(c){return c.k;}).filter(function(k){return typeof k==='string';});
   campos=campos.concat(['requeridas','corte_mermas','habilitadas','confeccionadas','post_cost_segundas','encajadas']);
-  $('ptSit').textContent=det?'Situación de cada OP y color':'Avance por proceso de cada OP y color';
+  $('ptSit').innerHTML=(det?'Situación de cada OP y color':'Avance por proceso de cada OP y color')+'<span class="xl">Excel · '+(det?'REPORTE':'PRIORIDADES')+'</span>';
   $('phSit').textContent=det?'Una fila por OP y color, ordenada por semana de la XFTY, con subtotal por grupo. Los % se calculan sobre las requeridas (en subtotales y total: suma ÷ suma).':
     'Lo que falta en cada proceso. Por cortar = a producir − habilitadas; por costurar = a producir − confeccionadas; por acabar viene del sistema.';
-  pintarTabla('tSit',cols,conSubtotales(rs,campos));
+  pintarVista('tSit',cols,conSubtotales(rs,campos),det?{card:cardOP,leyenda:LEY,tope:500,total:false,grupo:function(r){return semTxt(semKey(r));}}:{ident:['OP','Grupo','Estilo','Color'],tope:500,grupo:function(r){return semTxt(semKey(r));}});
   XLS.sit=[{titulo:det?'Situación por OP y color':'Avance por proceso',cols:cols,rows:rs}];
 }
 
-/* ---------- FECHAS ---------- */
-function porOp(rs){
-  var m={},orden=[];
-  rs.forEach(function(r){if(!m[r.op]){m[r.op]={op:r.op,rows:[]};orden.push(r.op);}m[r.op].rows.push(r);});
-  return orden.map(function(k){var o=m[k],r=o.rows[0];
-    o.grupo=r.grupo;o.cli=r.cliente_corto;o.po=r.po;o.estilo=r.estilo;o.xfty=r.xfty;o.xfty_pcp=r.xfty_pcp;o.sin_xfty=r.sin_xfty;
-    o.sistema=r.despacho_sistema;o.desp_op=r.despacho_op;o.sem=semKey(r);o.hc=r.hito_corte;o.hs=r.hito_costura;o.ha=r.hito_acabado;
-    o.ncol=o.rows.filter(function(x){return x.despacho_es_color;}).length;
-    o.req=suma(o.rows,'requeridas');o.enc=suma(o.rows,'encajadas');return o;});
-}
-function pintarFechas(rs){
-  var ops=porOp(rs).filter(function(o){
-    if(VFEC==='sin')return o.sin_xfty;
-    if(VFEC==='dif')return (o.desp_op&&o.desp_op!==o.sistema)||o.ncol>0;return true;})
-    .sort(function(a,b){return String(a.xfty).localeCompare(String(b.xfty))||a.op.localeCompare(b.op);});
-  var dis=PUEDE?'':' disabled';
-  var cols=[
-    {t:'OP',k:'op'},{t:'Grupo',k:'grupo'},{t:'Cliente',k:'cli'},{t:'P.O.',k:'po'},{t:'Estilo',k:'estilo'},
-    {t:'Requeridas',k:'req',tipo:'n0',tot:'suma'},{t:'% encajado',k:function(o){return pc(o.enc,o.req);},tipo:'pct'},
-    {t:'Despacho sistema',k:'sistema',tipo:'fecha'},
-    {t:'Despacho PCP',k:function(o){return '<input type="date" class="fecha'+(o.desp_op?' propia':'')+'" data-op="'+o.op+'" data-c="despacho" value="'+(o.desp_op||'')+'"'+dis+'>'+
-      ' <button class="btn mini" type="button" data-color="'+o.op+'">'+(o.ncol?o.ncol+' color'+(o.ncol>1?'es':'')+' aparte':'Por color')+'</button>';},tipo:'html'},
-    {t:'Dif. días',k:function(o){return o.desp_op&&o.sistema?difDias(o.desp_op,o.sistema):null;},tipo:'n0'},
-    {t:'XFTY',k:function(o){return '<input type="date" class="fecha'+(o.xfty_pcp?' propia':'')+'" data-op="'+o.op+'" data-c="xfty" value="'+(o.xfty_pcp||'')+'"'+dis+'>'+
-      (o.sin_xfty?' <span class="pill ale">Sin XFTY</span>':'');},tipo:'html'},
-    {t:'Sem',k:function(o){return o.sem%100||'';}},{t:'Meta corte',k:'hc',tipo:'fecha'},{t:'Meta costura',k:'hs',tipo:'fecha'},{t:'Meta acabado',k:'ha',tipo:'fecha'},
-    {t:'Historial',k:function(o){var n=HISTN[o.op]||0;return n?'<button class="btn mini" type="button" data-hist="'+o.op+'">Ver ('+n+')</button>':'';},tipo:'html'}];
-  pintarTabla('tFec',cols,ops,{vacio:VFEC==='sin'?'Todas las OP de los filtros elegidos tienen XFTY.':VFEC==='dif'?'Ninguna OP de los filtros elegidos tiene fecha de despacho distinta a la del sistema.':undefined});
-  XLS.fec=[{titulo:'XFTY y fecha de despacho por OP',cols:[{t:'OP',k:'op'},{t:'Grupo',k:'grupo'},{t:'Cliente',k:'cli'},{t:'P.O.',k:'po'},{t:'Estilo',k:'estilo'},{t:'Requeridas',k:'req',tipo:'n0'},
-    {t:'Despacho sistema',k:'sistema',tipo:'fecha'},{t:'Despacho PCP',k:'desp_op',tipo:'fecha'},{t:'XFTY PCP',k:'xfty_pcp',tipo:'fecha'},{t:'XFTY usada',k:'xfty',tipo:'fecha'},
-    {t:'Meta corte',k:'hc',tipo:'fecha'},{t:'Meta costura',k:'hs',tipo:'fecha'},{t:'Meta acabado',k:'ha',tipo:'fecha'}],rows:ops}];
-}
-function guardar(op,campo,fecha,comb,quitar,el){
-  if(!PUEDE)return Promise.resolve();
-  if(el)el.classList.add('guardando');
-  var p={op:op,campo:campo,fecha:fecha||''};if(comb)p.comb=comb;if(quitar)p.quitar_colores=true;
-  return api('guardar_fecha',p).then(function(j){
-    if(!j||!j.ok)throw new Error(j&&j.error||'No se pudo guardar');
-    D.forEach(function(r){if(r.op!==op)return;
-      if(campo==='xfty'){r.xfty_pcp=fecha||null;recalcXfty(r);}
-      else if(comb){if(r.comb===comb){r.desp_color=fecha||null;r.despacho_es_color=!!fecha;}}
-      else{r.despacho_op=fecha||null;if(quitar){r.desp_color=null;r.despacho_es_color=false;}}
-      r.despacho=r.desp_color||r.despacho_op||r.despacho_sistema;});
-    HISTN[op]=(HISTN[op]||0)+1;toast('Guardado');render();
-  }).catch(function(e){toast(e.message,true);render();});
-}
-function abrirColores(op){
-  var rows=D.filter(function(r){return r.op===op;}),dis=PUEDE?'':' disabled',r0=rows[0];
-  var h='<div class="ph" style="margin:0 0 10px">Fecha de despacho de la OP: <b>'+(fF(r0.despacho_op)||'la del sistema')+'</b>. Escribe una fecha solo en el color que va distinto; vacía para que siga a la OP.</div>';
-  h+='<table><thead><tr><th>Color</th><th class="n">Requeridas</th><th>Despacho sistema</th><th>Fecha propia del color</th><th>Queda</th></tr></thead><tbody>'+
-    rows.map(function(r){return '<tr><td>'+esc(r.comb)+'</td><td class="n">'+n0(r.requeridas)+'</td><td>'+fF(r.despacho_sistema)+'</td><td><input type="date" class="fecha'+(r.desp_color?' propia':'')+
-      '" data-op="'+op+'" data-c="despacho" data-comb="'+esc(r.comb)+'" value="'+(r.desp_color||'')+'"'+dis+'></td><td>'+fF(r.despacho)+'</td></tr>';}).join('')+'</tbody></table>';
-  if(PUEDE&&rows.some(function(r){return r.desp_color;}))h+='<div style="margin-top:12px"><button class="btn" type="button" id="btnQuitar">Quitar las fechas por color (todos siguen a la OP)</button></div>';
-  abrirModal('OP '+op+' · fecha de despacho por color',h);
-  var b=$('btnQuitar');if(b)b.onclick=function(){guardar(op,'despacho',r0.despacho_op||'',null,true).then(function(){abrirColores(op);});};
-}
-function abrirHist(op){
-  abrirModal('OP '+op+' · historial de fechas','<div class="vacio">Cargando…</div>');
-  api('historial',{op:op}).then(function(j){var hs=(j&&j.historial)||[];
-    var nom={xfty:'XFTY',despacho:'Despacho de la OP','despacho color':'Despacho del color'};
-    $('mCuerpo').innerHTML=hs.length?'<table><thead><tr><th>Fecha y hora</th><th>Qué</th><th>Color</th><th>Antes</th><th>Después</th><th>Quién</th><th>Origen</th></tr></thead><tbody>'+
-      hs.map(function(x){return '<tr><td>'+esc(x.fecha)+'</td><td>'+(nom[x.campo]||esc(x.campo))+'</td><td>'+esc(x.comb||'')+'</td><td>'+(fF(x.antes)||'—')+'</td><td>'+(fF(x.despues)||'(vuelve a la del sistema)')+'</td><td>'+esc(x.usuario)+'</td><td>'+esc(x.origen)+'</td></tr>';}).join('')+'</tbody></table>':
-      '<div class="vacio">Esta OP no tiene cambios registrados.</div>';
-  }).catch(function(e){$('mCuerpo').innerHTML='<div class="err" style="display:block">'+esc(e.message)+'</div>';});
-}
-function abrirModal(t,h){$('mTit').textContent=t;$('mCuerpo').innerHTML=h;$('modal').classList.add('ver');document.body.classList.add('conModal');}
-function cerrarModal(){$('modal').classList.remove('ver');document.body.classList.remove('conModal');}
 
 /* ---------- CORTE ---------- */
 function diasDesde(s){if(!s)return null;var d=difDias(HOY,s);return d>1000?null:d;}
@@ -1152,19 +1153,19 @@ function pintarCorte(rs){
   if(RUTA==='Paños')cols=cols.concat([{t:'1er envío a lavado',k:'fec_1er_envio',tipo:'fecha'},{t:'Últ. recepción de lavado',k:'fec_ult_recepcion',tipo:'fecha'}]);
   cols.push({t:'Días desde últ. girado',k:function(r){return diasDesde(r.fec_ultimo_girado);},tipo:'n0'});
   $('phCola').textContent='OP '+(RUTA==='Paños'?'que pasan por lavado de paños':'de corte directo')+' con habilitado hasta 100 % de lo requerido. En cola de corte = girado − cortado; minutos en cola = esas prendas × minutos de corte de la OP.'+(RUTA==='Paños'?' Kg girados por enviar = girado × consumo − kg ya enviados a lavandería.':'');
-  pintarTabla('tCola',cols,cola);
+  pintarVista('tCola',cols,cola);
   var base=rs.filter(function(r){return r.valida_habilitado==='SI';});
   var gm=agrupar(base.slice().sort(function(a,b){return String(a.hito_corte).localeCompare(b.hito_corte);}),function(r){return mesKey(r.hito_corte);},['requeridas','req_prod','girado','habilitadas','cortado','min_por_cortar','kgs_por_girar','kgs_girados_por_enviar_lav']);
   gm.forEach(function(x){x.por_girar=x.req_prod-x.girado;x.por_hab=x.req_prod-x.habilitadas;x.no_cort=x.req_prod-x.cortado;x.kg=x.kgs_girados_por_enviar_lav+x.kgs_por_girar;});
   var cm=[{t:'Mes meta corte',k:function(x){return mesTxt(x.__k);}},{t:'Requeridas',k:'requeridas',tipo:'n0',tot:'suma'},{t:'Girado',k:'girado',tipo:'n0',tot:'suma'},{t:'Por girar',k:'por_girar',tipo:'n0',tot:'suma'},
     {t:'Habilitadas',k:'habilitadas',tipo:'n0',tot:'suma'},{t:'Por habilitar',k:'por_hab',tipo:'n0',tot:'suma'},{t:'Cortado',k:'cortado',tipo:'n0',tot:'suma'},{t:'No cortadas',k:'no_cort',tipo:'n0',tot:'suma'},
     {t:'Kg por cortar (paños)',k:'kg',tipo:'n1',tot:'suma'},{t:'Minutos por cortar',k:'min_por_cortar',tipo:'n0',tot:'suma'}];
-  pintarTabla('tCorMes',cm,gm);
+  pintarVista('tCorMes',cm,gm);
   var hab=rs.slice().sort(function(a,b){return String(a.grupo).localeCompare(b.grupo)||String(a.estilo).localeCompare(b.estilo)||String(a.comb).localeCompare(b.comb);});
   var ch=[{t:'Grupo',k:'grupo'},{t:'Estilo',k:'estilo'},{t:'OP',k:'op'},{t:'Color',k:'comb'},{t:'Requeridas',k:'requeridas',tipo:'n0',tot:'suma'},{t:'A producir',k:'req_prod',tipo:'n0',tot:'suma'},
     {t:'Girado',k:'girado',tipo:'n0',tot:'suma'},{t:'Cortado',k:'cortado',tipo:'n0',tot:'suma'},{t:'Stock en corte',k:'stock_en_corte',tipo:'n0',tot:'suma'},{t:'Merma de corte',k:'corte_mermas',tipo:'n0',tot:'suma'},
     {t:'Habilitadas',k:'habilitadas',tipo:'n0',tot:'suma'},Object.assign(pctCol('% habilitado','habilitadas','requeridas'),{cls:function(r){var p=pc(r.habilitadas,r.requeridas);return p!=null&&p<100&&r.girado>0?'rojo':'';}})];
-  pintarTabla('tHab',ch,hab);
+  pintarVista('tHab',ch,hab);
   XLS.cor=[{titulo:'Cola de corte · '+RUTA,cols:cols,rows:cola},{titulo:'Corte por mes de la fecha meta',cols:cm,rows:gm},{titulo:'Habilitado por grupo, estilo y color',cols:ch,rows:hab}];
 }
 
@@ -1172,17 +1173,17 @@ function pintarCorte(rs){
 function pintarCostura(rs){
   var gm=agrupar(rs.slice().sort(function(a,b){return String(a.hito_costura).localeCompare(b.hito_costura);}),function(r){return mesKey(r.hito_costura);},['requeridas','por_costura','min_por_costurar']);
   var cm=[{t:'Mes meta costura',k:function(x){return mesTxt(x.__k);}},{t:'Requeridas',k:'requeridas',tipo:'n0',tot:'suma'},{t:'Por costurar',k:'por_costura',tipo:'n0',tot:'suma'},{t:'Minutos por costurar',k:'min_por_costurar',tipo:'n0',tot:'suma'}];
-  pintarTabla('tCosMes',cm,gm);
+  pintarVista('tCosMes',cm,gm);
   var ins=rs.filter(function(r){return (r.confec_servicio+r.transito+r.en_insp)>0;}).sort(ordSem);
   var ci=[{t:'Sem despacho',k:function(r){return r.sem;}},{t:'Grupo',k:'grupo'},{t:'OP',k:'op'},{t:'Estilo',k:'estilo'},{t:'Color',k:'comb'},
     {t:'Conf. servicio',k:'confec_servicio',tipo:'n0',tot:'suma'},{t:'Tránsito',k:'transito',tipo:'n0',tot:'suma'},{t:'Inspección',k:'en_insp',tipo:'n0',tot:'suma'},
     {t:'Total',k:function(r){return r.confec_servicio+r.transito+r.en_insp;},tipo:'n0',tot:function(x){return suma(x,function(r){return r.confec_servicio+r.transito+r.en_insp;});}}];
-  pintarTabla('tInsp',ci,ins,{vacio:'No hay prendas en servicio de costura, tránsito ni inspección con los filtros elegidos.'});
+  pintarVista('tInsp',ci,ins,{vacio:'No hay prendas en servicio de costura, tránsito ni inspección con los filtros elegidos.'});
   var trf=function(r){return r.confec_servicio+r.transito+r.confec_lives+r.req_prod-r.habilitadas;};
   var tr=rs.filter(function(r){return /transfer/i.test(r.ruta||'')&&trf(r)>0;}).sort(ordSem);
   var ct=[{t:'Sem XFTY',k:function(r){return r.sem;}},{t:'Grupo',k:'grupo'},{t:'Estilo',k:'estilo'},{t:'OP',k:'op'},{t:'Color',k:'comb'},{t:'A producir',k:'req_prod',tipo:'n0',tot:'suma'},
     {t:'Por transferir',k:trf,tipo:'n0',tot:function(x){return suma(x,trf);}}];
-  pintarTabla('tTrans',ct,tr,{vacio:'No hay OP con Transfer pendiente con los filtros elegidos.'});
+  pintarVista('tTrans',ct,tr,{vacio:'No hay OP con Transfer pendiente con los filtros elegidos.'});
   XLS.cos=[{titulo:'Costura por mes de la fecha meta',cols:cm,rows:gm},{titulo:'Programa de inspección',cols:ci,rows:ins},{titulo:'Programa de transfer',cols:ct,rows:tr}];
 }
 
@@ -1192,13 +1193,13 @@ function pintarAcabado(rs){
   gm.forEach(function(x){x.por_enc=x.req_prod-x.encajadas;});
   var cm=[{t:'Mes meta acabado',k:function(x){return mesTxt(x.__k);}},{t:'Requeridas',k:'requeridas',tipo:'n0',tot:'suma'},{t:'A producir',k:'req_prod',tipo:'n0',tot:'suma'},
     {t:'Encajadas',k:'encajadas',tipo:'n0',tot:'suma'},{t:'Por encajar',k:'por_enc',tipo:'n0',tot:'suma'},pctCol('% encajado','encajadas','requeridas')];
-  pintarTabla('tAcaMes',cm,gm);
+  pintarVista('tAcaMes',cm,gm);
   var U=PAR.umbral_segundas_pct;
   $('phSeg').textContent='% segundas = segundas de post costura ÷ requeridas. En rojo desde '+n1Dec(U,0)+' %, como en el Excel.';
   var sg=rs.filter(function(r){return r.post_cost_segundas>0;}).sort(ordSem);
   var cs=[{t:'Sem XFTY',k:function(r){return r.sem;}},{t:'Grupo',k:'grupo'},{t:'Estilo',k:'estilo'},{t:'OP',k:'op'},{t:'Color',k:'comb'},{t:'Requeridas',k:'requeridas',tipo:'n0',tot:'suma'},
     {t:'Segundas',k:'post_cost_segundas',tipo:'n0',tot:'suma'},Object.assign(pctCol('% segundas','post_cost_segundas','requeridas',2),{cls:function(r){var p=pc(r.post_cost_segundas,r.requeridas);return p!=null&&p>=U?'rojo':'';}})];
-  pintarTabla('tSeg',cs,sg,{vacio:'No hay segundas registradas con los filtros elegidos.'});
+  pintarVista('tSeg',cs,sg,{vacio:'No hay segundas registradas con los filtros elegidos.'});
   XLS.aca=[{titulo:'Acabado por mes de la fecha meta',cols:cm,rows:gm},{titulo:'Segundas por OP y color',cols:cs,rows:sg}];
 }
 
@@ -1206,15 +1207,15 @@ function pintarAcabado(rs){
 function render(){
   var rs=filas();
   pintarKpis(rs);
-  pintarResumen(rs);pintarSituacion(rs);pintarFechas(D.filter(function(r){return pasa(r);}));pintarCorte(rs);pintarCostura(rs);pintarAcabado(rs);
+  pintarResumen(rs);pintarSituacion(rs);pintarCorte(rs);pintarCostura(rs);pintarAcabado(rs);
   Object.keys(charts).forEach(function(k){try{charts[k].resize();}catch(e){}});
   plegarTablasEnCelular();
 }
 function plegarTablasEnCelular(){
   var movil=window.matchMedia('(max-width:600px)').matches;
   document.querySelectorAll('.tabpane .panel').forEach(function(p){
-    if(!p.querySelector('.tscroll')||p.closest('#p-fec'))return;   /* la tabla de fechas es la bandeja de trabajo: no se pliega */
-    if(!movil){p.classList.remove('plegable','plegado');return;}
+    if(!p.querySelector('.tscroll'))return;
+    if(!movil||VISTA==='tar'){p.classList.remove('plegable','plegado');var vb=p.querySelector(':scope > .verdet');if(vb)vb.remove();return;}
     if(p.classList.contains('plegable'))return;
     p.classList.add('plegable','plegado');
     var b=document.createElement('button');b.type='button';b.className='verdet';b.textContent='Ver tabla';
@@ -1238,18 +1239,13 @@ $('fCli').onchange=function(){F.cli=this.value;render();};
 $('fSem').onchange=function(){F.sem=this.value;render();};
 segs('fEnc',function(v){F.enc=v;render();});
 segs('segSit',function(v){VSIT=v;render();});
-segs('segFec',function(v){VFEC=v;render();});
+segs('segVista',function(v){VISTA=v;try{localStorage.setItem('sopVista',v);}catch(e){}render();});
+[].forEach.call($('segVista').querySelectorAll('button'),function(b){b.classList.toggle('active',b.dataset.v===VISTA);});
 segs('segRuta',function(v){RUTA=v;render();});
 $('tabs').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;TAB=b.dataset.t;
   [].forEach.call($('tabs').querySelectorAll('button'),function(x){x.classList.toggle('active',x===b);});
   [].forEach.call(document.querySelectorAll('.tabpane'),function(p){p.classList.toggle('active',p.id==='p-'+TAB);});
   Object.keys(charts).forEach(function(k){try{charts[k].resize();}catch(e){}});});
-document.addEventListener('change',function(e){var t=e.target;if(!t.matches||!t.matches('input.fecha'))return;
-  guardar(t.dataset.op,t.dataset.c,t.value,t.dataset.comb||null,false,t).then(function(){if(t.dataset.comb&&$('modal').classList.contains('ver'))abrirColores(t.dataset.op);});});
-document.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
-  if(b.dataset.color)abrirColores(b.dataset.color);if(b.dataset.hist)abrirHist(b.dataset.hist);});
-$('mCerrar').onclick=cerrarModal;$('modal').addEventListener('click',function(e){if(e.target===$('modal'))cerrarModal();});
-document.addEventListener('keydown',function(e){if(e.key==='Escape')cerrarModal();});
 
 /* ---------- Excel LIVES ---------- */
 function xcol(c,i){var tipo={n0:'entero',n1:'decimal',n2:'decimal',pct:'porcentaje',fecha:'fecha',html:'texto'}[c.tipo]||'texto';return {campo:'c'+i,titulo:c.t,tipo:tipo};}
@@ -1277,10 +1273,6 @@ function cargar(){
     if(!j||!j.ok)throw new Error(j&&j.error||'No se pudo leer');
     HOY=j.hoy;PAR=j.parametros||{};PUEDE=!!j.puede_registrar;HISTN=j.historial_n||{};
     D=(j.filas||[]).map(function(r){r.desp_color=r.despacho_es_color?r.despacho:null;return r;});
-    document.querySelectorAll('.pD1').forEach(function(e){e.textContent=PAR.dias_hito_corte;});
-    document.querySelectorAll('.pD2').forEach(function(e){e.textContent=PAR.dias_hito_costura;});
-    document.querySelectorAll('.pD3').forEach(function(e){e.textContent=PAR.dias_hito_acabado;});
-    if(!PUEDE){$('aviso').style.display='block';$('aviso').textContent='Solo consulta: las fechas las escribe quien tiene permiso de registro en PCP.';}
     llenarSelects();render();
   }).catch(function(e){$('err').style.display='block';$('err').textContent='No se pudieron cargar los datos: '+e.message+'. Revisa la conexión y vuelve a abrir la pantalla.';});
 }
