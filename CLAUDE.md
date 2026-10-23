@@ -30,6 +30,9 @@ Son dos pantallas separadas (desde el 23/10/2026, en la rama `dashboard-y-regist
 - Vista `sop_v_op`: todas las fórmulas de DATA (BI a DT) y los campos calculados de las tablas dinámicas. La ruta, minutos y consumo salen de la propia OP (el Excel los tomaba del primer OP del estilo).
 - Registro SQL: serie `So` (So01 situacion op base). No usa Storage.
 
+## Registro libre para pruebas (23/10/2026, So02)
+- Mientras la herramienta no es la oficial, `registro.html` guarda sin usuario ni lista de permiso (decisión de Christian: lo conectado al sistema será confidencial y por usuario). Interruptor: `sop_parametros.registro_libre` (1 libre, 0 vuelve la regla de `sop_registran`). Sin usuario, lo guardado queda firmado "prueba (sin usuario)". Rodrigo en supervisión sigue sin guardar. Respaldo de las funciones originales: `respaldo_sop_funciones_20261023`. En SQL Server NO se replica: allí se exige usuario (anotar en el paquete para Sistemas).
+
 ## Quién la usa
 PCP (Analista de Planeamiento, vtineo). Absorbe a `despachos-pcp`, que queda como reserva sin cambios.
 
