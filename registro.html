@@ -768,6 +768,9 @@ body.conModal{overflow:hidden;}
     <input class="inp" id="fQ" type="search" placeholder="Buscar OP, grupo, estilo o P.O.">
     <select id="fCli"><option value="">Todos los clientes</option></select>
     <select id="fSem"><option value="">Todas las semanas XFTY</option></select>
+    <select id="fDesde" title="Mes de la XFTY: desde"></select>
+    <select id="fHasta" title="Mes de la XFTY: hasta"></select>
+    <div class="seg" id="fAtr" title="OP pendientes con XFTY anterior al rango"><button data-v="1" class="active">Con atrasadas anteriores</button><button data-v="0">Solo el rango</button></div>
     <div class="seg" id="fEnc">
       <button data-v="NO" class="active">Pendientes</button><button data-v="SI">Encajadas</button><button data-v="">Todas</button>
     </div>
@@ -798,7 +801,7 @@ function api(acc,p){
 }
 var $=function(id){return document.getElementById(id);};
 var D=[],PAR={},PUEDE=false,HOY=null,HISTN={};
-var F={q:'',cli:'',sem:'',enc:'NO'},TAB='res',VSIT='det',VFEC='',RUTA='Directo';
+var F={q:'',cli:'',sem:'',enc:'NO',desde:'',hasta:'',atras:true},TAB='res',VSIT='det',VFEC='',RUTA='Directo';
 var charts={},XLS={};
 var MES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Set','Oct','Nov','Dic'];
 
@@ -832,6 +835,10 @@ function recalcXfty(r){
 /* ---------- filtros ---------- */
 function pasa(r,sinEnc){
   if(F.cli&&r.cliente_corto!==F.cli)return false;
+  var mk=r.xfty?mesKey(r.xfty):'';
+  if(mk&&!((!F.desde||mk>=F.desde)&&(!F.hasta||mk<=F.hasta))){
+    if(!(F.atras&&F.desde&&mk<F.desde&&r.encajado!=='SI'))return false;   /* atrasadas anteriores al rango */
+  }
   if(F.sem&&String(semKey(r))!==F.sem)return false;
   if(!sinEnc&&F.enc&&r.encajado!==F.enc)return false;
   if(F.q){var q=F.q.toUpperCase();
@@ -931,12 +938,20 @@ function abrirHist(op){
 }
 function abrirModal(t,h){$('mTit').textContent=t;$('mCuerpo').innerHTML=h;$('modal').classList.add('ver');document.body.classList.add('conModal');}
 function cerrarModal(){$('modal').classList.remove('ver');document.body.classList.remove('conModal');}
+function mesDe(k,d){var y=+k.slice(0,4),m=+k.slice(5,7)-1+d;return new Date(Date.UTC(y,m,1)).toISOString().slice(0,7);}
+function rangoTxt(){if(!F.desde&&!F.hasta)return '';return ' · '+(F.desde?mesTxt(F.desde):'inicio')+' a '+(F.hasta?mesTxt(F.hasta):'sin límite')+(F.atras&&F.desde?' (con atrasadas anteriores)':'');}
 function render(){pintarFechas(filas());actualizarFlechas();}
 function llenarSelects(){
   var cl={},sm={};D.forEach(function(r){cl[r.cliente_corto]=1;sm[semKey(r)]=1;});
   $('fCli').innerHTML='<option value="">Todos los clientes</option>'+Object.keys(cl).sort().map(function(c){return '<option>'+esc(c)+'</option>';}).join('');
   $('fSem').innerHTML='<option value="">Todas las semanas XFTY</option>'+Object.keys(sm).map(Number).sort(function(a,b){return a-b;}).map(function(k){return '<option value="'+k+'">'+semTxt(k)+'</option>';}).join('');
   $('fCli').value=F.cli;$('fSem').value=F.sem;
+  var ms={};D.forEach(function(r){if(r.xfty)ms[mesKey(r.xfty)]=1;});ms[F.desde]=1;ms[F.hasta]=1;
+  var ks=Object.keys(ms).filter(Boolean).sort(),a=ks[0],z=ks[ks.length-1],all=[];
+  for(var k=a;k<=z;k=mesDe(k,1))all.push(k);
+  $('fDesde').innerHTML='<option value="">Desde el inicio</option>'+all.map(function(k){return '<option value="'+k+'">Desde '+mesTxt(k)+'</option>';}).join('');
+  $('fHasta').innerHTML='<option value="">Sin límite</option>'+all.map(function(k){return '<option value="'+k+'">Hasta '+mesTxt(k)+'</option>';}).join('');
+  $('fDesde').value=F.desde;$('fHasta').value=F.hasta;
 }
 function segs(id,fn){$(id).addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
   [].forEach.call($(id).querySelectorAll('button'),function(x){x.classList.toggle('active',x===b);});fn(b.dataset.v);});}
@@ -945,6 +960,8 @@ $('fCli').onchange=function(){F.cli=this.value;render();};
 $('fSem').onchange=function(){F.sem=this.value;render();};
 segs('fEnc',function(v){F.enc=v;render();});
 segs('segFec',function(v){VFEC=v;render();});
+$('fDesde').onchange=function(){F.desde=this.value;render();};$('fHasta').onchange=function(){F.hasta=this.value;render();};
+segs('fAtr',function(v){F.atras=v==='1';render();});
 document.addEventListener('change',function(e){var t=e.target;if(!t.matches||!t.matches('input.fecha'))return;
   guardar(t.dataset.op,t.dataset.c,t.value,t.dataset.comb||null,false,t).then(function(){if(t.dataset.comb&&$('modal').classList.contains('ver'))abrirColores(t.dataset.op);});});
 document.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
@@ -976,7 +993,7 @@ window.LS_XLS={clase:'btn',ancla:function(){return $('btnImp');},datos:function(
   if(!D.length)throw new Error('los datos todavía están cargando');
   var s=XLS.fec[0],cs=s.cols.filter(function(c){return c.tipo!=='html';});
   var filasX=s.rows.map(function(r){var o={};cs.forEach(function(c,i){o['c'+i]=xfil(c,r);});return o;});
-  return {titulo:'Registro de fechas · Programa PCP',sub:'XFTY y despacho por OP'+(F.cli?' · '+F.cli:'')+(F.sem?' · '+semTxt(+F.sem):'')+' · '+({NO:'pendientes',SI:'encajadas','':'todas'}[F.enc]),
+  return {titulo:'Registro de fechas · Programa PCP',sub:'XFTY y despacho por OP'+rangoTxt()+(F.cli?' · '+F.cli:'')+(F.sem?' · '+semTxt(+F.sem):'')+' · '+({NO:'pendientes',SI:'encajadas','':'todas'}[F.enc]),
     formula:'Hoja Resumen y hoja Detalle: cada OP con su despacho del sistema, su despacho PCP, su XFTY y las fechas meta, con los filtros puestos.',origen:'Programa PCP',
     resumen:[{titulo:s.titulo,columnas:cs.map(xcol),filas:filasX}],
     detalle:{congelarCols:1,nota:'Una fila por OP.',columnas:cs.map(xcol),filas:filasX}};
@@ -991,6 +1008,7 @@ function cargar(){
     document.querySelectorAll('.pD2').forEach(function(e){e.textContent=PAR.dias_hito_costura;});
     document.querySelectorAll('.pD3').forEach(function(e){e.textContent=PAR.dias_hito_acabado;});
     if(!PUEDE){$('aviso').style.display='block';$('aviso').textContent='Solo consulta: las fechas las escribe quien tiene permiso de registro en PCP.';}
+    var m0=HOY.slice(0,7);F.desde=mesDe(m0,-1);F.hasta=mesDe(m0,6);   /* por defecto: el mes anterior y 6 meses adelante */
     llenarSelects();render();
   }).catch(function(e){$('err').style.display='block';$('err').textContent='No se pudieron cargar los datos: '+e.message+'. Revisa la conexión y vuelve a abrir la pantalla.';});
 }
