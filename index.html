@@ -773,7 +773,7 @@ body.conModal{overflow:hidden;}
 
   <div class="tabs" id="tabs">
     <button class="active" data-t="res">Resumen</button>
-    <button data-t="sit">Situación OP</button>
+    <button data-t="sit">Reporte</button>
     <button data-t="fec">Fechas XFTY y despacho</button>
     <button data-t="cor">Corte</button>
     <button data-t="cos">Costura e inspección</button>
@@ -1256,7 +1256,7 @@ function xcol(c,i){var tipo={n0:'entero',n1:'decimal',n2:'decimal',pct:'porcenta
 function xfil(c,r){var v=typeof c.k==='function'?c.k(r):r[c.k];if(c.tipo==='pct')return v==null?null:v/100;if(c.tipo==='html')return '';return v;}
 window.LS_XLS={clase:'btn',ancla:function(){return $('btnImp');},datos:function(){
   if(!D.length)throw new Error('los datos todavía están cargando');
-  var nom={res:'Resumen',sit:'Situación OP',fec:'Fechas XFTY y despacho',cor:'Corte',cos:'Costura e inspección',aca:'Acabado y segundas'};
+  var nom={res:'Resumen',sit:'Reporte',fec:'Fechas XFTY y despacho',cor:'Corte',cos:'Costura e inspección',aca:'Acabado y segundas'};
   var sec=(XLS[TAB]||[]).map(function(s){var cs=s.cols.filter(function(c){return c.tipo!=='html';});
     return {titulo:s.titulo,columnas:cs.map(xcol),filas:s.rows.filter(function(r){return !r.__sub;}).map(function(r){var o={};cs.forEach(function(c,i){o['c'+i]=xfil(c,r);});return o;})};});
   var rs=filas();

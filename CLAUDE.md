@@ -8,7 +8,7 @@ Las reglas generales de trabajo están en el repo privado `lives-instrucciones` 
 - KPIs: prendas por encajar (a producir − encajadas), % encajado (encajadas ÷ requeridas), minutos por cortar y por costurar, OP sin XFTY.
 - Pestañas:
   - **Resumen**: flujo de corte, costura y acabado requerido por día (acumulado hasta cada fecha meta ÷ (días que faltan × eficiencia 0.85)) y stock por proceso por semana XFTY.
-  - **Situación OP**: una fila por OP y color con subtotal por grupo (pestaña REPORTE); vista "Avance por proceso" (pestaña PRIORIDADES).
+  - **Reporte** (antes "Situación OP"; nombre igual al del Excel desde el 22/10/2026): una fila por OP y color con subtotal por grupo (pestaña REPORTE); vista "Avance por proceso" (pestaña PRIORIDADES).
   - **Fechas XFTY y despacho**: la bandeja de trabajo de PCP. XFTY por OP (era Hoja2) y fecha de despacho por OP con excepción por color (era la columna AU). Se guardan solas, con historial; ninguna actualización del sistema las pisa. Fuera de la regla 500 (bandeja de trabajo, orden por XFTY).
   - **Corte**: cola de corte directo o paños (STOCK POR PROCESO), corte por mes de la fecha meta, % habilitado (LUISA).
   - **Costura e inspección**: costura por mes, programa de inspección, programa de transfer.
