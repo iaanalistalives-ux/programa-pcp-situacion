@@ -736,9 +736,9 @@ body.conModal{overflow:hidden;}
 .tarj .m span{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--stone);}
 .tarj .m b{font-size:14px;color:#333;}
 .tarj .m b.rojo{color:var(--rose);}
-.tarj .ruta{display:flex;flex-wrap:wrap;align-items:center;gap:3px 4px;margin-top:10px;padding-top:8px;border-top:1px dashed var(--warm);}
-.tarj .ruta span{font-size:11px;font-weight:700;background:var(--warm-light);color:var(--stone);border-radius:20px;padding:2px 8px;}
-.tarj .ruta em{font-style:normal;color:var(--stone);font-size:12px;}
+.ruta{display:flex;flex-wrap:wrap;align-items:center;gap:3px 4px;margin-top:10px;padding-top:8px;border-top:1px dashed var(--warm);}
+.ruta span{font-size:11px;font-weight:700;background:var(--warm-light);color:var(--stone);border-radius:20px;padding:2px 8px;}
+.ruta em{font-style:normal;color:var(--stone);font-size:12px;}
 .ley{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--stone);margin:0 0 10px;}
 .ley i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px;}
 table.conbandas thead tr.bandas th{top:0;height:26px;padding:4px 6px;text-align:center;color:#fff;font-size:11px;letter-spacing:1px;z-index:3;border-bottom:0;background:#fff;}
@@ -815,6 +815,7 @@ tr.sub.subE td{background:var(--warm-light);color:var(--stone);}
 
   <div class="tabs" id="tabs">
     <button class="active" data-t="res">Resumen</button>
+    <button data-t="seg">Seguimiento</button>
     <button data-t="sit">Reporte</button>
     <button data-t="cor">Corte</button>
     <button data-t="cos">Costura e inspección</button>
@@ -840,6 +841,38 @@ tr.sub.subE td{background:var(--warm-light);color:var(--stone);}
         <div class="ph">Prendas en cada etapa según la semana de la XFTY de la OP. En tela = a producir aún sin girar; en corte = giradas aún no habilitadas; en confección = en costura LIVES y de servicio; en post costura = tránsito, inspección y acabado.</div>
         <div class="cwrap tall"><canvas id="chStock"></canvas></div>
         <div class="tscroll" style="margin-top:12px" id="tStock"></div></div>
+    </div>
+  </div>
+
+  <!-- SEGUIMIENTO -->
+  <div class="tabpane" id="p-seg">
+    <div class="grid">
+      <div class="panel col12"><span class="tira resultado"></span>
+        <div class="phead"><div><div class="pt" id="ptSegA">Avance por cliente</div><div class="ph" id="phSegA"></div></div>
+          <div class="flctl"><div class="seg" id="segDim"><button data-v="cliente" class="active">Cliente</button><button data-v="grupo">Grupo</button><button data-v="estilo">Estilo</button><button data-v="op">OP</button></div><select id="selEnt" title="Elegir"></select></div></div>
+        <div class="vacio" id="segVacio" style="display:none">No hay datos con los filtros elegidos.</div>
+        <div id="segCuerpo">
+          <div class="cwrap" id="wSegA"><canvas id="chSegA"></canvas></div>
+          <div class="tscroll" id="tSegRes" style="margin-top:12px"></div>
+        </div></div>
+    </div>
+    <div id="segDet">
+      <div class="gh" id="segTit" style="margin:4px 0 10px"></div>
+      <div class="kpis" id="kSeg"></div>
+      <div class="grid">
+        <div class="panel col6"><span class="tira volumen"></span><div class="pt">Ruta de producción</div>
+          <div class="ph">Cuántas prendas llegaron a cada etapa y qué parte de lo requerido es. Cada etapa cuenta lo que ya pasó por ella.</div>
+          <div id="segRutas"></div>
+          <div class="cwrap"><canvas id="chSegR"></canvas></div></div>
+        <div class="panel col6"><span class="tira resultado"></span><div class="pt">Dónde está, por semana de la XFTY</div>
+          <div class="ph">Las prendas de lo elegido, en la etapa donde están hoy, según la semana de la XFTY de cada OP.</div>
+          <div class="cwrap"><canvas id="chSegS"></canvas></div></div>
+      </div>
+      <div class="grid">
+        <div class="panel col12"><span class="tira resultado"></span><div class="pt">OP y colores de lo elegido<span class="xl">Excel · REPORTE</span></div>
+          <div class="ph" id="phSegOp"></div>
+          <div class="tscroll" id="tSegOp"></div></div>
+      </div>
     </div>
   </div>
 
@@ -1263,11 +1296,73 @@ function pintarAcabado(rs){
   XLS.aca=[{titulo:'Acabado por mes de la fecha meta',cols:cm,rows:gm},{titulo:'Segundas por OP y color',cols:cs,rows:sg}];
 }
 
+/* ---------- SEGUIMIENTO: cliente, grupo, estilo u OP ---------- */
+var SG={dim:'cliente',key:null};
+var DIMS={cliente:{f:function(r){return r.cliente_corto;},t:'Cliente'},grupo:{f:function(r){return r.grupo;},t:'Grupo'},estilo:{f:function(r){return r.estilo;},t:'Estilo'},op:{f:function(r){return r.op;},t:'OP'}};
+var CSG=['requeridas','req_prod','girado','cortado','habilitadas','confeccionadas','encajadas','en_tela','en_corte','en_confeccion','en_post_costura','min_por_cortar','min_por_costurar','post_cost_segundas','corte_mermas'];
+var ETAPAS=[['Requeridas','requeridas','#9AA9A4'],['Girado','girado','#B45309'],['Cortado','cortado','#4E6B78'],['Habilitadas','habilitadas','#2F6FB5'],['Confeccionadas','confeccionadas','#10B981'],['Encajadas','encajadas','#0F7A5A']];
+var etqH={id:'etqH',afterDatasetsDraw:function(ch){var ctx=ch.ctx;ch.data.datasets.forEach(function(ds,di){ch.getDatasetMeta(di).data.forEach(function(b,i){var t=ds.etq&&ds.etq[i];if(!t)return;
+  ctx.save();ctx.font='700 11.5px Calibri, Arial, sans-serif';ctx.fillStyle='#0E3B36';ctx.textBaseline='middle';ctx.fillText(t,b.x+6,b.y);ctx.restore();});});}};
+function nOps(rows){var o={};rows.forEach(function(r){o[r.op]=1;});return Object.keys(o).length;}
+function camposSit(){var c=COLS_SIT.filter(function(c){return c.tot==='suma'||typeof c.tot==='function';}).map(function(c){return c.k;}).filter(function(k){return typeof k==='string';});
+  return c.concat(['requeridas','corte_mermas','habilitadas','confeccionadas','post_cost_segundas','encajadas']);}
+function pintarSeguimiento(rs){
+  var d=DIMS[SG.dim],ents=agrupar(rs,d.f,CSG);
+  ents.forEach(function(x){x.por_enc=suma(x.__rows,function(r){return Math.max(0,r.req_prod-r.encajadas);});x.nop=nOps(x.__rows);});
+  ents.sort(function(a,b){return b.por_enc-a.por_enc;});
+  var vac=!ents.length;$('segVacio').style.display=vac?'block':'none';$('segCuerpo').style.display=vac?'none':'';$('segDet').style.display=vac?'none':'';
+  $('ptSegA').textContent='Avance por '+d.t.toLowerCase();
+  if(vac){$('selEnt').innerHTML='';return;}
+  if(!ents.some(function(x){return String(x.__k)===String(SG.key);}))SG.key=ents[0].__k;
+  $('selEnt').innerHTML=ents.map(function(x){return '<option value="'+esc(x.__k)+'">'+esc(x.__k)+' · '+n0(x.por_enc)+' por encajar</option>';}).join('');
+  $('selEnt').value=String(SG.key);
+  var sel=ents.filter(function(x){return String(x.__k)===String(SG.key);})[0],top=ents.slice(0,15);
+  if(top.indexOf(sel)<0)top.push(sel);
+  var tot=function(x){return x.en_tela+x.en_corte+x.en_confeccion+x.en_post_costura+x.encajadas;};
+  $('wSegA').style.height=Math.max(240,80+top.length*30)+'px';
+  $('phSegA').textContent='Cada barra es el 100 % de las prendas requeridas de ese '+d.t.toLowerCase()+', repartidas según dónde están hoy (verde = ya encajadas). Orden: más prendas por encajar arriba.'+
+    (ents.length>15?' Se muestran los 15 primeros y el elegido; los demás están en la lista de arriba a la derecha y en la tabla.':'')+' Toca una barra para ver su detalle.';
+  nuevoChart('chSegA',{type:'bar',data:{labels:top.map(function(x){return x.__k+' · '+n0(x.requeridas);}),datasets:SEG.map(function(sg){return {label:sg[0],data:top.map(function(x){return tot(x)?x[sg[1]]/tot(x)*100:0;}),abs:top.map(function(x){return x[sg[1]];}),backgroundColor:sg[2],stack:'a',
+      borderWidth:function(c){return top[c.dataIndex]===sel?2:0;},borderColor:'#0E3B36'};})},
+    options:{indexAxis:'y',animation:{duration:600},plugins:{legend:LEYENDA,tooltip:{callbacks:{title:function(it){return top[it[0].dataIndex].__k;},label:function(c){return c.dataset.label+': '+n0(c.dataset.abs[c.dataIndex])+' ('+n1(c.parsed.x)+' %)';}}}},
+      onClick:function(e,els){if(els.length){SG.key=top[els[0].index].__k;setTimeout(render,0);}},onHover:function(e,els){if(e.native&&e.native.target)e.native.target.style.cursor=els.length?'pointer':'default';},
+      scales:{x:{stacked:true,max:100,ticks:{callback:function(v){return v+' %';}}},y:{stacked:true,grid:{display:false}}}}});
+  var cols=[{t:d.t,k:'__k'},{t:'OP',k:'nop',tipo:'n0',tot:'suma'},{t:'Requeridas',k:'requeridas',tipo:'n0',tot:'suma'},{t:'Por encajar',k:'por_enc',tipo:'n0',tot:'suma'},
+    pctCol('% habilitado','habilitadas','requeridas'),pctCol('% confeccionado','confeccionadas','requeridas'),pctCol('% encajado','encajadas','requeridas'),
+    {t:'Estado',k:function(x){return dot(pc(x.encajadas,x.requeridas));},tipo:'html'},{t:'Minutos por cortar',k:'min_por_cortar',tipo:'n0',tot:'suma'},{t:'Minutos por costurar',k:'min_por_costurar',tipo:'n0',tot:'suma'}];
+  pintarVista('tSegRes',cols,ents,{ident:[d.t],tope:500});
+  /* detalle de lo elegido */
+  var rowsSel=rs.filter(function(r){return String(d.f(r))===String(SG.key);}).sort(ordSem),x=sel;
+  $('segTit').textContent=d.t+' '+SG.key;
+  var pend=rowsSel.filter(function(r){return r.encajado!=='SI';}),venc={};
+  pend.forEach(function(r){if(r.xfty&&r.xfty<HOY)venc[r.op]=1;});
+  var xs=pend.map(function(r){return r.xfty;}).filter(Boolean).sort(),nv=Object.keys(venc).length;
+  $('kSeg').innerHTML=kpi('hero','Prendas por encajar',n0(x.por_enc),x.nop+' OP · '+rowsSel.length+' colores')+
+    kpi('','Encajado',fp(pc(x.encajadas,x.requeridas)),n0(x.encajadas)+' de '+n0(x.requeridas)+' requeridas')+
+    kpi('neutro','Minutos por cortar',n0(x.min_por_cortar),n0(suma(rowsSel,function(r){return Math.max(0,r.req_prod-r.cortado);}))+' prendas aún sin cortar')+
+    kpi('neutro','Minutos por costurar',n0(x.min_por_costurar),n0(suma(rowsSel,function(r){return Math.max(0,r.req_prod-r.confeccionadas);}))+' prendas aún sin confeccionar')+
+    kpi(nv?'alert':'neutro','XFTY más próxima',xs.length?fF(xs[0]):'—',nv+' OP pendientes con la XFTY vencida');
+  var rutas={};rowsSel.forEach(function(r){if(r.ruta){rutas[r.ruta]=rutas[r.ruta]||{};rutas[r.ruta][r.op]=1;}});
+  $('segRutas').innerHTML=Object.keys(rutas).map(function(k){return '<div class="ruta" style="margin:0 0 8px;padding-top:0;border-top:0">'+k.split(',').map(function(p){return '<span>'+esc(p.trim())+'</span>';}).join('<em>›</em>')+'<em style="margin-left:6px">'+Object.keys(rutas[k]).length+' OP</em></div>';}).join('');
+  var vals=ETAPAS.map(function(e){return x[e[1]];});
+  nuevoChart('chSegR',{type:'bar',data:{labels:ETAPAS.map(function(e){return e[0];}),datasets:[{data:vals,backgroundColor:ETAPAS.map(function(e){return e[2];}),borderRadius:3,etq:vals.map(function(v){return n0(v)+' · '+fp(pc(v,x.requeridas),0);})}]},
+    options:{indexAxis:'y',animation:{duration:600},layout:{padding:{right:110}},plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return n0(c.parsed.x)+' prendas ('+fp(pc(c.parsed.x,x.requeridas),1)+' de lo requerido)';}}}},
+      scales:{x:{beginAtZero:true,ticks:{callback:function(v){return n0(v);}}},y:{grid:{display:false}}}},plugins:[etqH]});
+  var gs=agrupar(rowsSel.slice().sort(function(a,b){return semKey(a)-semKey(b);}),semKey,['en_tela','en_corte','en_confeccion','en_post_costura','encajadas']);
+  nuevoChart('chSegS',{type:'bar',data:{labels:gs.map(function(g){return semTxt(g.__k);}),datasets:SEG.slice().reverse().map(function(sg){return {label:sg[0],data:gs.map(function(g){return g[sg[1]];}),backgroundColor:sg[2],borderRadius:3,stack:'a'};})},
+    options:{animation:{duration:600},layout:{padding:{top:22}},plugins:{legend:LEYENDA,tooltip:{mode:'index',callbacks:{label:function(c){return c.dataset.label+': '+n0(c.parsed.y);}}}},
+      scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,beginAtZero:true,ticks:{callback:function(v){return n0(v);}}}}},plugins:[etiquetaTotal]});
+  $('phSegOp').textContent='Una fila por OP y color de '+d.t.toLowerCase()+' '+SG.key+', con el mismo formato del Reporte.';
+  pintarVista('tSegOp',COLS_SIT,conSubtotales(rowsSel,camposSit(),true),{bandas:BANDAS_SIT,card:cardOP,leyenda:LEY,min:380,tope:500,total:false,grupo:function(r){return semTxt(semKey(r));}});
+  XLS.seg=[{titulo:'Avance por '+d.t.toLowerCase(),cols:cols,rows:ents},
+    {titulo:d.t+' '+SG.key+' · etapas',cols:[{t:'Etapa',k:'e'},{t:'Prendas',k:'v',tipo:'n0'},{t:'% de requeridas',k:'p',tipo:'pct'}],rows:ETAPAS.map(function(e){return {e:e[0],v:x[e[1]],p:pc(x[e[1]],x.requeridas)};})}];
+}
+
 /* ---------- render ---------- */
 function render(){
   var rs=filas();
   pintarKpis(rs);
-  pintarResumen(rs);pintarSituacion(rs);pintarCorte(rs);pintarCostura(rs);pintarAcabado(rs);
+  pintarResumen(rs);pintarSeguimiento(rs);pintarSituacion(rs);pintarCorte(rs);pintarCostura(rs);pintarAcabado(rs);
   Object.keys(charts).forEach(function(k){try{charts[k].resize();}catch(e){}});
   plegarTablasEnCelular();
 }
@@ -1300,6 +1395,7 @@ $('fSem').onchange=function(){F.sem=this.value;render();};
 segs('fEnc',function(v){F.enc=v;render();});
 segs('segSit',function(v){VSIT=v;render();});
 segs('segFlP',function(v){FL.p=v;render();});segs('segFlG',function(v){FL.g=v;render();});segs('segFlA',function(v){FL.a=v;render();});
+segs('segDim',function(v){SG.dim=v;SG.key=null;render();});$('selEnt').onchange=function(){SG.key=this.value;render();};
 segs('segVista',function(v){VISTA=v;try{localStorage.setItem('sopVista',v);}catch(e){}render();});
 [].forEach.call($('segVista').querySelectorAll('button'),function(b){b.classList.toggle('active',b.dataset.v===VISTA);});
 segs('segRuta',function(v){RUTA=v;render();});
@@ -1313,7 +1409,7 @@ function xcol(c,i){var tipo={n0:'entero',n1:'decimal',n2:'decimal',pct:'porcenta
 function xfil(c,r){var v=typeof c.k==='function'?c.k(r):r[c.k];if(c.tipo==='pct')return v==null?null:v/100;if(c.tipo==='html')return '';return v;}
 window.LS_XLS={clase:'btn',ancla:function(){return $('btnImp');},datos:function(){
   if(!D.length)throw new Error('los datos todavía están cargando');
-  var nom={res:'Resumen',sit:'Reporte',fec:'Fechas XFTY y despacho',cor:'Corte',cos:'Costura e inspección',aca:'Acabado y segundas'};
+  var nom={res:'Resumen',seg:'Seguimiento',sit:'Reporte',fec:'Fechas XFTY y despacho',cor:'Corte',cos:'Costura e inspección',aca:'Acabado y segundas'};
   var sec=(XLS[TAB]||[]).map(function(s){var cs=s.cols.filter(function(c){return c.tipo!=='html';});
     return {titulo:s.titulo,columnas:cs.map(xcol),filas:s.rows.filter(function(r){return !r.__sub;}).map(function(r){var o={};cs.forEach(function(c,i){o['c'+i]=xfil(c,r);});return o;})};});
   var rs=filas();
