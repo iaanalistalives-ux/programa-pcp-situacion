@@ -678,6 +678,9 @@ select{cursor:pointer;}
 .phead{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;}
 .phead .seg{margin-left:auto;}
 .cwrap{position:relative;width:100%;height:clamp(220px,26vh,320px);}
+.flctl{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
+.phead .flctl .seg{margin-left:0;}
+.cwrap.xtall{height:clamp(340px,48vh,560px);}
 .cwrap.tall{height:clamp(260px,34vh,400px);}
 .cwrap canvas{position:absolute;inset:0;}
 @media(min-width:1700px){.cwrap{height:clamp(260px,28vh,380px);}.cwrap.tall{height:clamp(300px,36vh,460px);}}
@@ -754,7 +757,7 @@ tr.sub.subE td{background:var(--warm-light);color:var(--stone);}
 .tarj .m span.dot{display:inline-block;font-size:0;margin-right:4px;}
 .xl{font-size:10.5px;font-weight:700;background:var(--warm-light);color:var(--stone);border-radius:20px;padding:2px 9px;margin-left:8px;text-transform:uppercase;letter-spacing:.3px;vertical-align:2px;white-space:nowrap;}
 /* celular */
-@media(max-width:900px){.wrap{padding:14px 14px 36px;}.kpis{grid-template-columns:repeat(2,1fr);}.cwrap{height:300px;}}
+@media(max-width:900px){.cwrap.xtall{height:340px;}.wrap{padding:14px 14px 36px;}.kpis{grid-template-columns:repeat(2,1fr);}.cwrap{height:300px;}}
 @media(max-width:600px){
   body{font-size:13.5px;}
   .bar{position:static;flex-wrap:nowrap;overflow-x:auto;padding:8px 10px;gap:8px;}
@@ -821,12 +824,16 @@ tr.sub.subE td{background:var(--warm-light);color:var(--stone);}
   <!-- RESUMEN -->
   <div class="tabpane active" id="p-res">
     <div class="grid">
-      <div class="panel col4"><span class="tira volumen"></span><div class="pt">Flujo de corte requerido</div>
-        <div class="ph" id="phFc"></div><div class="cwrap"><canvas id="chFc"></canvas></div><div class="vacio" id="vFc" style="display:none"></div></div>
-      <div class="panel col4"><span class="tira volumen"></span><div class="pt">Flujo de costura requerido</div>
-        <div class="ph" id="phFs"></div><div class="cwrap"><canvas id="chFs"></canvas></div><div class="vacio" id="vFs" style="display:none"></div></div>
-      <div class="panel col4"><span class="tira volumen"></span><div class="pt">Flujo de acabado requerido</div>
-        <div class="ph" id="phFa"></div><div class="cwrap"><canvas id="chFa"></canvas></div><div class="vacio" id="vFa" style="display:none"></div></div>
+      <div class="panel col12"><span class="tira volumen"></span>
+        <div class="phead"><div><div class="pt">Flujo requerido<span class="xl">Excel · Gráficos de REPORTE</span></div><div class="ph" id="phFl"></div></div>
+          <div class="flctl">
+            <div class="seg" id="segFlP"><button data-v="corte" class="active">Corte</button><button data-v="costura">Costura</button><button data-v="acabado">Acabado</button></div>
+            <div class="seg" id="segFlG"><button data-v="dia" class="active">Día</button><button data-v="sem">Semana</button><button data-v="mes">Mes</button><button data-v="anio">Año</button></div>
+            <div class="seg" id="segFlA"><button data-v="con" class="active">Con atrasadas</button><button data-v="sin">Sin atrasadas</button></div>
+          </div></div>
+        <div class="vacio" id="vFl" style="display:none"></div>
+        <div class="cwrap xtall"><canvas id="chFl"></canvas></div>
+        <div class="tscroll" style="margin-top:12px" id="tFl"></div></div>
     </div>
     <div class="grid">
       <div class="panel col12"><span class="tira resultado"></span><div class="pt">Stock por proceso, por semana XFTY</div>
@@ -1091,26 +1098,48 @@ var etiquetaTotal={id:'etiquetaTotal',afterDatasetsDraw:function(chart){var ctx=
     if(!tot||top===null)continue;var x=chart.getDatasetMeta(0).data[i].x;ctx.save();ctx.font='700 11.5px Calibri, Arial, sans-serif';ctx.fillStyle='#0E3B36';ctx.textAlign='center';ctx.fillText(n0(tot),x,top-6);ctx.restore();}}};
 function nuevoChart(id,cfg){if(charts[id])charts[id].destroy();charts[id]=new Chart($(id),cfg);}
 
-function flujo(rs,campoHito,campoVal,idCh,idV,idPh,unidad){
-  var ef=PAR.eficiencia_flujo,m={};
-  rs.forEach(function(r){var h=r[campoHito],v=+r[campoVal]||0;if(!h||v<=0)return;m[h]=(m[h]||0)+v;});
-  var fechas=Object.keys(m).sort(),acum=0,lab=[],val=[];
-  fechas.forEach(function(f){acum+=m[f];var dias=difDias(f,HOY);if(dias<=0)return;lab.push(fF(f).slice(0,5)+(f.slice(0,4)!==HOY.slice(0,4)?'/'+f.slice(2,4):''));val.push(acum/(dias*ef));});
-  $(idPh).textContent=unidad+' por día que hacen falta para llegar a cada fecha meta: lo pendiente con fecha meta hasta ese día ÷ (días que faltan × '+Math.round(ef*100)+' % de eficiencia). Las OP atrasadas se cuentan para mañana.';
-  var vac=!val.length;$(idV).style.display=vac?'block':'none';$(idV).textContent=vac?'No hay '+unidad.toLowerCase()+' pendientes con los filtros elegidos.':'';
-  $(idCh).parentNode.style.display=vac?'none':'block';if(vac){if(charts[idCh]){charts[idCh].destroy();delete charts[idCh];}return;}
-  nuevoChart(idCh,{type:'line',data:{labels:lab,datasets:[{label:unidad+' por día',data:val,borderColor:'#4E6B78',borderWidth:3.5,tension:.35,fill:true,
-    backgroundColor:function(c){return AREA(c,'78,107,120');},pointRadius:4,pointHoverRadius:7,pointBackgroundColor:'#4E6B78',pointBorderColor:'#fff',pointBorderWidth:2}]},
-    options:{animation:ANIM,layout:{padding:{top:30,right:26}},plugins:{legend:{display:false},etiquetasTendencia:{fmt:function(v){return v>=10000?n0(v/1000)+' mil':n0(v);}},
-      tooltip:{callbacks:{label:function(c){return n0(c.parsed.y)+' '+unidad.toLowerCase()+' por día';}}}},
-      scales:{y:{beginAtZero:true,ticks:{callback:function(v){return v>=1000?n0(v/1000)+' mil':v;}}},x:{grid:{display:false}}}},plugins:[etiquetasTendencia]});
+var FL={p:'corte',g:'dia',a:'con'};
+var FLP={corte:{h:'hito_corte',v:'min_por_cortar',u:'Minutos de corte',d:'dias_hito_corte'},costura:{h:'hito_costura',v:'min_por_costurar',u:'Minutos de costura',d:'dias_hito_costura'},acabado:{h:'hito_acabado',v:'prendas_por_acabar',u:'Prendas a acabar',d:'dias_hito_acabado'}};
+var FLG={dia:'día',sem:'semana',mes:'mes',anio:'año'},FLE={dia:'el día',sem:'la semana',mes:'el mes',anio:'el año'};
+function finPeriodo(f,g){if(g==='dia')return f;var t=dUTC(f),d=new Date(t);
+  if(g==='sem')return iso(t+(6-d.getUTCDay())*864e5);
+  if(g==='mes')return iso(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0));
+  return iso(Date.UTC(d.getUTCFullYear(),11,31));}
+function etqPeriodo(fin,g){var otro=fin.slice(0,4)!==HOY.slice(0,4);
+  if(g==='dia')return fF(fin).slice(0,5)+(otro?'/'+fin.slice(2,4):'');
+  if(g==='sem')return 'S'+semana(fin)+(otro?' · '+fin.slice(0,4):'');
+  if(g==='mes')return mesTxt(fin.slice(0,7));return fin.slice(0,4);}
+function pintarFlujo(rs){
+  var c=FLP[FL.p],ef=PAR.eficiencia_flujo,m={},atr=0,uni=c.u.toLowerCase();
+  rs.forEach(function(r){var h=r[c.h],v=+r[c.v]||0;if(!h||v<=0)return;
+    if(r.xfty&&dUTC(r.xfty)-PAR[c.d]*864e5<=dUTC(HOY)){atr+=v;if(FL.a==='sin')return;}
+    var k=finPeriodo(h,FL.g);m[k]=(m[k]||0)+v;});
+  var acum=0,fil=[];
+  Object.keys(m).sort().forEach(function(k){acum+=m[k];var dias=difDias(k,HOY);if(dias<=0)return;fil.push({__k:k,etq:etqPeriodo(k,FL.g),vence:m[k],acum:acum,dias:dias,ritmo:acum/(dias*ef)});});
+  var fmt=function(v){return v>=10000?n0(v/1000)+' mil':n0(v);};
+  $('phFl').textContent=c.u+' por día que hacen falta, desde hoy, para tener listo lo que vence hasta el cierre de cada '+FLG[FL.g]+': lo pendiente con fecha meta hasta ese cierre ÷ (días que faltan × '+Math.round(ef*100)+' % de eficiencia). Las barras (eje derecho) son lo que vence dentro de cada '+FLG[FL.g]+'. '+
+    (FL.a==='con'?'Las OP atrasadas ('+n0(atr)+' '+uni+') se cuentan para mañana, por eso el primer punto sale alto.':'Sin atrasadas: se dejan fuera '+n0(atr)+' '+uni+' que ya vencieron.');
+  var cols=[{t:'Cierre del '+FLG[FL.g],k:'etq'},{t:'Vence en el período',k:'vence',tipo:'n0',tot:'suma'},{t:'Acumulado pendiente',k:'acum',tipo:'n0'},{t:'Días hasta el cierre',k:'dias',tipo:'n0'},{t:c.u+' por día',k:'ritmo',tipo:'n0'}];
+  XLS.fl=[{titulo:'Flujo requerido · '+c.u+' · por '+FLG[FL.g]+(FL.a==='sin'?' · sin atrasadas':''),cols:cols,rows:fil}];
+  var vac=!fil.length;$('vFl').style.display=vac?'block':'none';$('vFl').textContent=vac?'No hay '+uni+' pendientes con los filtros elegidos.':'';
+  $('chFl').parentNode.style.display=vac?'none':'block';
+  if(vac){if(charts.chFl){charts.chFl.destroy();delete charts.chFl;}$('tFl').innerHTML='';return;}
+  nuevoChart('chFl',{type:'bar',data:{labels:fil.map(function(x){return x.etq;}),datasets:[
+    {type:'line',label:c.u+' por día',data:fil.map(function(x){return x.ritmo;}),borderColor:'#4E6B78',borderWidth:3.5,tension:.3,fill:true,backgroundColor:function(x){return AREA(x,'78,107,120');},pointRadius:fil.length>60?2:4,pointHoverRadius:7,pointBackgroundColor:'#4E6B78',pointBorderColor:'#fff',pointBorderWidth:2,yAxisID:'y',order:1},
+    {type:'bar',label:'Vence en '+FLE[FL.g],data:fil.map(function(x){return x.vence;}),backgroundColor:'rgba(16,185,129,.35)',borderRadius:3,yAxisID:'y1',sinEtiquetas:true,order:2}]},
+    options:{animation:ANIM,layout:{padding:{top:30,right:20}},interaction:{mode:'index',intersect:false},
+      plugins:{legend:LEYENDA,etiquetasTendencia:{fmt:fmt,max:18},tooltip:{callbacks:{
+        label:function(x){return x.dataset.label+': '+n0(x.parsed.y);},
+        afterBody:function(it){var f=fil[it[0].dataIndex];return ['Acumulado pendiente: '+n0(f.acum),'Días hasta el cierre: '+f.dias];}}}},
+      scales:{y:{beginAtZero:true,title:{display:true,text:c.u+' por día'},ticks:{callback:function(v){return v>=1000?n0(v/1000)+' mil':v;}}},
+        y1:{position:'right',beginAtZero:true,grid:{drawOnChartArea:false},title:{display:true,text:'Vence en '+FLE[FL.g]},ticks:{callback:function(v){return v>=1000?n0(v/1000)+' mil':v;}}},
+        x:{grid:{display:false}}}},plugins:[etiquetasTendencia]});
+  pintarVista('tFl',cols,fil,{ident:['Cierre del '+FLG[FL.g]]});
 }
 
 /* ---------- RESUMEN ---------- */
 function pintarResumen(rs){
-  flujo(rs,'hito_corte','min_por_cortar','chFc','vFc','phFc','Minutos de corte');
-  flujo(rs,'hito_costura','min_por_costurar','chFs','vFs','phFs','Minutos de costura');
-  flujo(rs,'hito_acabado','prendas_por_acabar','chFa','vFa','phFa','Prendas a acabar');
+  pintarFlujo(rs);
   var g=agrupar(rs.slice().sort(function(a,b){return semKey(a)-semKey(b);}),semKey,['requeridas','en_tela','en_corte','en_confeccion','en_post_costura','encajadas']);
   var lab=g.map(function(x){return semTxt(x.__k);});
   var S=[['En tela','en_tela','#B45309'],['En corte','en_corte','#4E6B78'],['En confección','en_confeccion','#10B981'],['En post costura','en_post_costura','#F59E0B'],['Encajadas','encajadas','#0F7A5A']];
@@ -1121,7 +1150,7 @@ function pintarResumen(rs){
   var cols=[{t:'Semana XFTY',k:function(r){return semTxt(r.__k);}},{t:'Requeridas',k:'requeridas',tipo:'n0',tot:'suma'}].concat(S.map(function(s){return {t:s[0],k:s[1],tipo:'n0',tot:'suma'};}))
     .concat([{t:'% encajado',k:function(r){return pc(r.encajadas,r.requeridas);},tipo:'pct',tot:function(x){return pc(suma(x,'encajadas'),suma(x,'requeridas'));}}]);
   pintarVista('tStock',cols,g);
-  XLS.res=[{titulo:'Stock por proceso por semana XFTY',cols:cols,rows:g}];
+  XLS.res=(XLS.fl||[]).concat([{titulo:'Stock por proceso por semana XFTY',cols:cols,rows:g}]);
 }
 
 /* ---------- SITUACIÓN ---------- */
@@ -1270,6 +1299,7 @@ $('fCli').onchange=function(){F.cli=this.value;render();};
 $('fSem').onchange=function(){F.sem=this.value;render();};
 segs('fEnc',function(v){F.enc=v;render();});
 segs('segSit',function(v){VSIT=v;render();});
+segs('segFlP',function(v){FL.p=v;render();});segs('segFlG',function(v){FL.g=v;render();});segs('segFlA',function(v){FL.a=v;render();});
 segs('segVista',function(v){VISTA=v;try{localStorage.setItem('sopVista',v);}catch(e){}render();});
 [].forEach.call($('segVista').querySelectorAll('button'),function(b){b.classList.toggle('active',b.dataset.v===VISTA);});
 segs('segRuta',function(v){RUTA=v;render();});
