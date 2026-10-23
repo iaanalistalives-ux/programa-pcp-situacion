@@ -738,6 +738,20 @@ body.conModal{overflow:hidden;}
 .tarj .ruta em{font-style:normal;color:var(--stone);font-size:12px;}
 .ley{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--stone);margin:0 0 10px;}
 .ley i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px;}
+table.conbandas thead tr.bandas th{top:0;height:26px;padding:4px 6px;text-align:center;color:#fff;font-size:11px;letter-spacing:1px;z-index:3;border-bottom:0;background:#fff;}
+table.conbandas thead tr.bandas th.bc{background:#4E6B78;} table.conbandas thead tr.bandas th.bs{background:#0F7A5A;} table.conbandas thead tr.bandas th.bp{background:#0E3B36;}
+table.conbandas thead tr:nth-child(2) th{top:26px;}
+tr.sub.subE td{background:var(--warm-light);color:var(--stone);}
+.dot{display:inline-block;width:11px;height:11px;border-radius:50%;vertical-align:-1px;}
+.etapas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px;}
+.et{border-top:3px solid var(--warm);padding-top:5px;font-size:12px;min-width:0;}
+.et.c{border-top-color:#4E6B78;} .et.s{border-top-color:#0F7A5A;} .et.p{border-top-color:#0E3B36;}
+.et h5{margin:0 0 4px;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--stone);}
+.et div{display:flex;justify-content:space-between;gap:6px;line-height:1.55;}
+.et div span{color:var(--stone);} .et div b{color:#333;font-weight:700;text-align:right;}
+.et div.res{margin-top:3px;padding-top:3px;border-top:1px solid var(--warm);flex-direction:column;gap:0;}
+.et div.res b{text-align:left;}
+.tarj .m span.dot{display:inline-block;font-size:0;margin-right:4px;}
 .xl{font-size:10.5px;font-weight:700;background:var(--warm-light);color:var(--stone);border-radius:20px;padding:2px 9px;margin-left:8px;text-transform:uppercase;letter-spacing:.3px;vertical-align:2px;white-space:nowrap;}
 /* celular */
 @media(max-width:900px){.wrap{padding:14px 14px 36px;}.kpis{grid-template-columns:repeat(2,1fr);}.cwrap{height:300px;}}
@@ -957,11 +971,12 @@ function esNum(c){return /^(n0|n1|n2|pct)$/.test(c.tipo);}
 function pintarTabla(id,cols,rows,op){
   op=op||{};var el=$(id);
   if(!rows.length){el.innerHTML='<div class="vacio">'+(op.vacio||'No hay OP que cumplan los filtros elegidos.')+'</div>';return;}
-  var h='<table><thead><tr>'+cols.map(function(c){return '<th'+(esNum(c)?' class="n"':'')+'>'+c.t+'</th>';}).join('')+'</tr></thead><tbody>';
+  var bd=op.bandas?'<tr class="bandas">'+op.bandas.map(function(b){return '<th colspan="'+b[1]+'"'+(b[2]?' class="'+b[2]+'"':'')+'>'+b[0]+'</th>';}).join('')+'</tr>':'';
+  var h='<table'+(bd?' class="conbandas"':'')+'><thead>'+bd+'<tr>'+cols.map(function(c){return '<th'+(esNum(c)?' class="n"':'')+'>'+c.t+'</th>';}).join('')+'</tr></thead><tbody>';
   var tope=op.tope&&rows.length>op.tope&&!hayFiltro()?op.tope:rows.length;
   for(var i=0;i<tope;i++){var r=rows[i];
-    h+='<tr'+(r.__sub?' class="sub"':'')+'>'+cols.map(function(c){var cls=(esNum(c)?'n':'')+(c.cls?' '+(typeof c.cls==='function'?c.cls(r):c.cls):'');
-      return '<td'+(cls.trim()?' class="'+cls.trim()+'"':'')+'>'+celda(c,r)+'</td>';}).join('')+'</tr>';}
+    h+='<tr'+(r.__sub?' class="sub'+(r.__nivel?' '+r.__nivel:'')+'"':'')+'>'+cols.map(function(c){var cls=(esNum(c)?'n':'')+(c.cls?' '+(typeof c.cls==='function'?c.cls(r):c.cls):'');
+      return '<td'+(cls.trim()?' class="'+cls.trim()+'"':'')+'>'+((c.rep&&r.__ocultar&&r.__ocultar[c.t])?'':celda(c,r))+'</td>';}).join('')+'</tr>';}
   if(op.total!==false){var tr={};cols.forEach(function(c){if(c.tot==='suma')tr[c.k]=suma(rows.filter(function(x){return !x.__sub;}),c.k);else if(typeof c.tot==='function')tr[typeof c.k==='string'?c.k:c.t]=c.tot(rows.filter(function(x){return !x.__sub;}));});
     h+='<tr class="tot">'+cols.map(function(c,j){if(j===0)return '<td>Total</td>';var kk=typeof c.k==='string'?c.k:c.t;
       if(!(kk in tr))return '<td></td>';var cc=Object.assign({},c,{k:kk});return '<td class="n">'+celda(cc,tr)+'</td>';}).join('')+'</tr>';}
@@ -991,11 +1006,16 @@ function barraHtml(r){var tot=0;SEG.forEach(function(s){tot+=+r[s[1]]||0;});
   return '<div class="barra">'+SEG.map(function(s){var v=+r[s[1]]||0;return tot&&v?'<i style="width:'+(v/tot*100)+'%;background:'+s[2]+'" title="'+s[0]+': '+n0(v)+'"></i>':'';}).join('')+'</div>';}
 function mm(l,v,cls){return v==null||v===''?'':'<div class="m"><span>'+l+'</span><b'+(cls?' class="'+cls+'"':'')+'>'+v+'</b></div>';}
 function cardOP(r){
-  var venc=r.xfty&&r.xfty<HOY&&r.encajado!=='SI';
+  var venc=r.xfty&&r.xfty<HOY&&r.encajado!=='SI',z=function(v){return v?n0(v):'–';},pe=pc(r.encajadas,r.requeridas);
+  function li(l,v,p,d){return '<div><span>'+l+'</span><b>'+z(v)+(p!=null&&v?' · '+fp(p,d):'')+'</b></div>';}
   return '<div class="tarj"><div class="th"><b>OP '+esc(r.op)+'</b>'+(venc?'<span class="pill ale">XFTY vencida</span>':'')+'<span class="pill low">'+esc(r.cliente_corto)+'</span></div>'+
     '<div class="ts">'+esc(r.grupo)+' · '+esc(r.estilo)+'</div><div class="ts">'+esc(r.comb)+(r.po?' · P.O. '+esc(r.po):'')+'</div>'+barraHtml(r)+
-    '<div class="tm">'+mm('Requeridas',n0(r.requeridas))+mm('Encajado',fp(pc(r.encajadas,r.requeridas)))+mm('Habilitado',fp(pc(r.habilitadas,r.requeridas)))+mm('Confeccionado',fp(pc(r.confeccionadas,r.requeridas)))+
-    mm('XFTY',fF(r.xfty)+(r.sin_xfty?' (sistema)':''),venc?'rojo':'')+mm('Despacho',fF(r.despacho))+'</div>'+
+    '<div class="tm">'+mm('Requeridas',n0(r.requeridas))+mm('Encajado',dot(pe)+' '+fp(pe))+mm('XFTY',fF(r.xfty)+(r.sin_xfty?' (sistema)':''),venc?'rojo':'')+mm('Despacho',fF(r.despacho))+'</div>'+
+    '<div class="etapas">'+
+      '<div class="et c"><h5>Corte</h5>'+li('Cortado',r.cortado)+li('Merma',r.corte_mermas,pc(r.corte_mermas,r.requeridas),2)+'<div class="res"><span>Habilitadas</span><b>'+z(r.habilitadas)+' · '+fp(pc(r.habilitadas,r.requeridas),0)+'</b></div></div>'+
+      '<div class="et s"><h5>Costura</h5>'+li('Conf. LIVES',r.confec_lives)+li('Conf. servicio',r.confec_servicio)+'<div class="res"><span>Confecc.</span><b>'+z(r.confeccionadas)+' · '+fp(pc(r.confeccionadas,r.requeridas),0)+'</b></div></div>'+
+      '<div class="et p"><h5>Post costura</h5>'+li('Tránsito',r.transito)+li('Inspección',r.en_insp)+li('Segundas',r.post_cost_segundas,pc(r.post_cost_segundas,r.requeridas),1)+'<div class="res"><span>Encajadas</span><b>'+z(r.encajadas)+'</b></div></div>'+
+    '</div>'+
     (r.ruta?'<div class="ruta">'+String(r.ruta).split(',').map(function(x){return '<span>'+esc(x.trim())+'</span>';}).join('<em>›</em>')+'</div>':'')+'</div>';
 }
 function cardGen(cols,r,op){
@@ -1012,8 +1032,8 @@ function pintarTarjetas(id,cols,rows,op){
   cols.forEach(function(c,j){if(j===0)return;var kk=typeof c.k==='string'?c.k:c.t;if(kk in tr)tm+=mm(c.t,celda(Object.assign({},c,{k:kk}),tr));});
   if(tm&&op.total!==false)h+='<div class="tgrid"><div class="tarj tot"><div class="th"><b>Total</b></div><div class="tm">'+tm+'</div></div></div>';
   for(var i=0;i<tope;i++){var r=rr[i];
-    if(op.grupo){var g=op.grupo(r);if(g!==act){if(abierto)h+='</div>';h+='<div class="gh">'+esc(g)+'</div><div class="tgrid">';act=g;abierto=true;}}
-    else if(!abierto){h+='<div class="tgrid">';abierto=true;}
+    if(op.grupo){var g=op.grupo(r);if(g!==act){if(abierto)h+='</div>';h+='<div class="gh">'+esc(g)+'</div><div class="tgrid"'+(op.min?' style="grid-template-columns:repeat(auto-fill,minmax('+op.min+'px,1fr))"':'')+'>';act=g;abierto=true;}}
+    else if(!abierto){h+='<div class="tgrid"'+(op.min?' style="grid-template-columns:repeat(auto-fill,minmax('+op.min+'px,1fr))"':'')+'>';abierto=true;}
     h+=op.card?op.card(r):cardGen(cols,r,op);}
   if(abierto)h+='</div>';
   if(tope<rr.length)h+='<div class="lsTope500">Se muestran los '+tope+' registros de '+rr.length.toLocaleString('es-PE')+'. Usa los filtros para ver los demás.</div>';
@@ -1023,7 +1043,7 @@ function pintarVista(id,cols,rows,op){
   op=Object.assign({},TAR[id]||{},op||{});var el=$(id),tar=VISTA==='tar';
   el.classList.toggle('tarjetas',tar);
   if(tar)pintarTarjetas(id,cols,rows,op);
-  else pintarTabla(id,cols,rows,{vacio:op.vacio,tope:op.tope});
+  else pintarTabla(id,cols,rows,{vacio:op.vacio,tope:op.tope,bandas:op.bandas});
 }
 
 /* ---------- agrupar ---------- */
@@ -1105,8 +1125,10 @@ function pintarResumen(rs){
 }
 
 /* ---------- SITUACIÓN ---------- */
+/* semáforo del % encajado, igual que el Excel: menos de 80 rojo, de 80 a menos de 95 ámbar, desde 95 verde */
+function dot(p){if(p==null||!isFinite(p))return '';return '<span class="dot" style="background:'+(p<80?'#DC2626':p<95?'#F59E0B':'#0F7A5A')+'"></span>';}
 var COLS_SIT=[
-  {t:'Sem',k:function(r){return r.__sub?'':semTxt(semKey(r));}},{t:'Cliente',k:'cliente_corto'},{t:'Grupo',k:'grupo'},{t:'Estilo',k:'estilo'},{t:'OP',k:'op'},{t:'Color',k:'comb'},
+  {t:'Sem',rep:true,k:function(r){return r.__sub?'':semTxt(semKey(r));}},{t:'Cliente',rep:true,k:'cliente_corto'},{t:'Grupo',rep:true,k:'grupo'},{t:'Estilo',rep:true,k:'estilo'},{t:'OP',k:'op'},{t:'Color',k:'comb'},
   {t:'XFTY',k:'xfty',tipo:'fecha'},{t:'Despacho',k:'despacho',tipo:'fecha'},{t:'Requeridas',k:'requeridas',tipo:'n0',tot:'suma'},{t:'A producir',k:'req_prod',tipo:'n0',tot:'suma'},
   {t:'Girado',k:'girado',tipo:'n0',tot:'suma'},{t:'Cortado',k:'cortado',tipo:'n0',tot:'suma'},{t:'Merma de corte',k:'corte_mermas',tipo:'n0',tot:'suma'},
   pctCol('% merma','corte_mermas','requeridas',2),{t:'Habilitadas',k:'habilitadas',tipo:'n0',tot:'suma'},pctCol('% habilit.','habilitadas','requeridas'),
@@ -1114,17 +1136,26 @@ var COLS_SIT=[
   pctCol('% confecc.','confeccionadas','requeridas'),{t:'Tránsito',k:'transito',tipo:'n0',tot:'suma'},{t:'Inspección',k:'en_insp',tipo:'n0',tot:'suma'},
   {t:'Segundas',k:'post_cost_segundas',tipo:'n0',tot:'suma'},pctCol('% segundas','post_cost_segundas','requeridas',2),
   {t:'Post cost. servicio',k:'post_cost_servicio',tipo:'n0',tot:'suma'},{t:'Acabados LIVES',k:'acabados_lives',tipo:'n0',tot:'suma'},
-  {t:'Encajadas',k:'encajadas',tipo:'n0',tot:'suma'},pctCol('% encajado','encajadas','requeridas')];
+  {t:'Encajadas',k:'encajadas',tipo:'n0',tot:'suma'},pctCol('% encajado','encajadas','requeridas'),
+  {t:'Estado',k:function(r){return dot(pc(r.encajadas,r.requeridas));},tipo:'html'}];
+var BANDAS_SIT=[['',8],['Corte',8,'bc'],['Costura',4,'bs'],['Post costura',9,'bp']];
 var COLS_PRI=[
   {t:'Sem',k:function(r){return r.__sub?'':semTxt(semKey(r));}},{t:'Grupo',k:'grupo'},{t:'Estilo',k:'estilo'},{t:'Color',k:'comb'},{t:'OP',k:'op'},{t:'P.O.',k:'po'},
   {t:'Requeridas',k:'requeridas',tipo:'n0',tot:'suma'},{t:'Por cortar',k:'por_corte',tipo:'n0',tot:'suma'},{t:'Habilitadas',k:'habilitadas',tipo:'n0',tot:'suma'},
   {t:'Por costurar',k:'por_costura',tipo:'n0',tot:'suma'},{t:'Confeccionadas',k:'confeccionadas',tipo:'n0',tot:'suma'},{t:'Por acabar',k:'por_acabar',tipo:'n0',tot:'suma'},
   {t:'Encajadas',k:'encajadas',tipo:'n0',tot:'suma'}];
 function ordSem(a,b){return semKey(a)-semKey(b)||String(a.grupo).localeCompare(b.grupo)||String(a.estilo).localeCompare(b.estilo)||String(a.op).localeCompare(b.op)||String(a.comb).localeCompare(b.comb);}
-function conSubtotales(rs,campos){
-  var out=[],act=null,buf=[];
-  function cerrar(){if(!buf.length)return;out=out.concat(buf);if(buf.length>1){var s={__sub:true,grupo:'Total '+act.split('|')[1]};campos.forEach(function(c){s[c]=suma(buf,c);});out.push(s);}buf=[];}
-  rs.forEach(function(r){var k=semKey(r)+'|'+r.grupo;if(k!==act){cerrar();act=k;}buf.push(r);});cerrar();return out;
+function conSubtotales(rs,campos,det){
+  var out=[],aG=null,aE=null,bG=[],bE=[],ant=null;
+  function sub(nivel,buf,g,e){var x={__sub:true,__nivel:nivel,grupo:g,estilo:e};campos.forEach(function(c){x[c]=suma(buf,c);});out.push(x);}
+  function cerrarE(){if(det&&bE.length)sub('subE',bE,'','Total '+bE[0].estilo);bE=[];}
+  function cerrarG(){cerrarE();if(bG.length)sub('subG',bG,'Total '+bG[0].grupo,'');bG=[];}
+  rs.forEach(function(r){var kg=semKey(r)+'|'+r.grupo,ke=kg+'|'+r.estilo;
+    if(kg!==aG){cerrarG();aG=kg;aE=null;ant=null;}
+    if(ke!==aE){cerrarE();aE=ke;}
+    r.__ocultar=det&&ant?{'Sem':1,'Cliente':1,'Grupo':1,'Estilo':ant.estilo===r.estilo}:null;
+    ant=r;bE.push(r);bG.push(r);out.push(r);});
+  cerrarG();return out;
 }
 function pintarSituacion(rs){
   rs=rs.slice().sort(ordSem);
@@ -1132,9 +1163,9 @@ function pintarSituacion(rs){
   var campos=cols.filter(function(c){return c.tot==='suma'||typeof c.tot==='function';}).map(function(c){return c.k;}).filter(function(k){return typeof k==='string';});
   campos=campos.concat(['requeridas','corte_mermas','habilitadas','confeccionadas','post_cost_segundas','encajadas']);
   $('ptSit').innerHTML=(det?'Situación de cada OP y color':'Avance por proceso de cada OP y color')+'<span class="xl">Excel · '+(det?'REPORTE':'PRIORIDADES')+'</span>';
-  $('phSit').textContent=det?'Una fila por OP y color, ordenada por semana de la XFTY, con subtotal por grupo. Los % se calculan sobre las requeridas (en subtotales y total: suma ÷ suma).':
+  $('phSit').textContent=det?'Una fila por OP y color, ordenada por semana de la XFTY, con subtotal por estilo y por grupo, en el orden del proceso: corte, costura y post costura. Los % se calculan sobre las requeridas (en subtotales y total: suma ÷ suma). El punto del final es el % encajado: rojo menos de 80 %, ámbar de 80 a menos de 95 %, verde desde 95 %.':
     'Lo que falta en cada proceso. Por cortar = a producir − habilitadas; por costurar = a producir − confeccionadas; por acabar viene del sistema.';
-  pintarVista('tSit',cols,conSubtotales(rs,campos),det?{card:cardOP,leyenda:LEY,tope:500,total:false,grupo:function(r){return semTxt(semKey(r));}}:{ident:['OP','Grupo','Estilo','Color'],tope:500,grupo:function(r){return semTxt(semKey(r));}});
+  pintarVista('tSit',cols,conSubtotales(rs,campos,det),det?{bandas:BANDAS_SIT,card:cardOP,min:380,leyenda:LEY,tope:500,total:false,grupo:function(r){return semTxt(semKey(r));}}:{ident:['OP','Grupo','Estilo','Color'],tope:500,grupo:function(r){return semTxt(semKey(r));}});
   XLS.sit=[{titulo:det?'Situación por OP y color':'Avance por proceso',cols:cols,rows:rs}];
 }
 

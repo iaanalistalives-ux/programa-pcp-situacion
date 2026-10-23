@@ -12,7 +12,7 @@ Son dos pantallas separadas (desde el 23/10/2026, en la rama `dashboard-y-regist
 - KPIs: prendas por encajar (a producir − encajadas), % encajado (encajadas ÷ requeridas), minutos por cortar y por costurar, OP sin XFTY.
 - Pestañas:
   - **Resumen**: flujo de corte, costura y acabado requerido por día (acumulado hasta cada fecha meta ÷ (días que faltan × eficiencia 0.85)) y stock por proceso por semana XFTY.
-  - **Reporte** (antes "Situación OP"; nombre igual al del Excel desde el 22/10/2026): una fila por OP y color con subtotal por grupo (pestaña REPORTE); vista "Avance por proceso" (pestaña PRIORIDADES).
+  - **Reporte** (antes "Situación OP"; nombre igual al del Excel desde el 22/10/2026): una fila por OP y color con subtotal por estilo y por grupo, bandas CORTE / COSTURA / POST COSTURA, semáforo del % encajado (rojo <80, ámbar 80 a <95, verde ≥95: umbrales leídos del Excel) y sem/cliente/grupo/estilo sin repetir, como la pestaña REPORTE; la tarjeta muestra las tres etapas en ese orden; vista "Avance por proceso" (pestaña PRIORIDADES).
   - (Ya no es pestaña del dashboard: está en `registro.html`) **Fechas XFTY y despacho**: la bandeja de trabajo de PCP. XFTY por OP (era Hoja2) y fecha de despacho por OP con excepción por color (era la columna AU). Se guardan solas, con historial; ninguna actualización del sistema las pisa. Fuera de la regla 500 (bandeja de trabajo, orden por XFTY).
   - **Corte**: cola de corte directo o paños (STOCK POR PROCESO), corte por mes de la fecha meta, % habilitado (LUISA).
   - **Costura e inspección**: costura por mes, programa de inspección, programa de transfer.
