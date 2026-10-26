@@ -914,7 +914,7 @@ function guardar(op,campo,fecha,comb,quitar,el){
       else if(comb){if(r.comb===comb){r.desp_color=fecha||null;r.despacho_es_color=!!fecha;}}
       else{r.despacho_op=fecha||null;if(quitar){r.desp_color=null;r.despacho_es_color=false;}}
       r.despacho=r.desp_color||r.despacho_op||r.despacho_sistema;});
-    HISTN[op]=(HISTN[op]||0)+1;toast('Guardado');render();
+    HISTN[op]=(HISTN[op]||0)+1;toast('Guardado');render();try{if(window.parent!==window)window.parent.postMessage({lsSop:1,tipo:'guardado'},'*');}catch(x){}
   }).catch(function(e){toast(e.message,true);render();});
 }
 function abrirColores(op){
