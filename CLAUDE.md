@@ -20,7 +20,6 @@ Son dos pantallas separadas (desde el 23/10/2026, en la rama `dashboard-y-regist
   - **Corte**: cola de corte directo o paños (STOCK POR PROCESO), corte por mes de la fecha meta, % habilitado (LUISA).
   - **Costura e inspección**: costura por mes, programa de inspección, programa de transfer.
   - **Acabado y segundas**: acabado por mes y segundas por OP (rojo desde 2 %).
-  - **Saldos** (26/10/2026, rama `pestana-saldos`): saldos de prendas 2025–2026 (3,345 filas, 11,782 prendas, 626 OP, al 17/10/2026) cruzados por OP con el grupo de la tabla `ops`. Los datos se leen solo al abrir la pestaña (`sop_api('saldos')`). En esa pestaña la barra cambia: Año (Todo/2025/2026), cliente, grupo y motivo; la búsqueda también filtra; se esconden los filtros del programa y los KPI del programa. Cuatro vistas: Dónde atacar (OP que suman el 50 %, saldo puntual contra reaparece, no aceptado), Tendencia (líneas año contra año, mismos meses, fechas con más saldo), Grupos, clientes y estilos, y Detalle (regla 500). KPI clicables, Tablas/Tarjetas y Excel LIVES (Resumen = vista abierta; Detalle = cada registro). 195 OP (3,587 prendas) no están en `ops` y salen como «SIN GRUPO».
 - Excel LIVES (bloque `lsXlsJs` v1.11 con `window.LS_XLS`): Resumen = la pestaña abierta; Detalle = cada OP y color filtrado.
 
 ## Base de datos (Supabase lives-datos, prefijo `sop_`)
@@ -29,7 +28,7 @@ Son dos pantallas separadas (desde el 23/10/2026, en la rama `dashboard-y-regist
 - Lo que escribe PCP: `sop_fechas`, `sop_fechas_color`, `sop_historial`. Quién registra: `sop_registran` (vtineo) o superusuario; Rodrigo solo mira.
 - Reglas en tablas: `sop_excluir_po` (palabras de P.O. de muestra, distinguen mayúsculas como la macro), `sop_parametros` (días de las fechas meta 45/35/7, eficiencia 0.85, umbrales).
 - Vista `sop_v_op`: todas las fórmulas de DATA (BI a DT) y los campos calculados de las tablas dinámicas. La ruta, minutos y consumo salen de la propia OP (el Excel los tomaba del primer OP del estilo).
-- Saldos (So03): tabla `sop_saldos` (datos congelados del Excel `Saldos.xlsx`; RLS sin política, solo se lee por la puerta), vista `sop_v_saldos` (con `ops` para el grupo) y acción `saldos` de `sop_api`. Respaldo de la función original: `respaldo_sop_funciones_20261026`. Para recargar: función temporal de carga (jsonb), llamarla y borrarla. En SQL Server: reporte de saldos directo del sistema.
+- Saldos (So03, 26/10/2026): la pestaña Saldos se publicó y se QUITÓ el mismo día por pesada (decisión de Christian). Siguen en Supabase, sin uso y sin borrar: tabla `sop_saldos` (3,345 filas, datos congelados del Excel al 17/10/2026), vista `sop_v_saldos` y la acción `saldos` de `sop_api`. La versión de la pantalla está en el commit 852d200 del historial. Respaldo de la función original: `respaldo_sop_funciones_20261026`.
 - Registro SQL: serie `So` (So01 situacion op base). No usa Storage.
 
 ## Registro libre para pruebas (23/10/2026, So02)
