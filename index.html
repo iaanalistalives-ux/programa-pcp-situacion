@@ -799,6 +799,12 @@ tr.sub.subE td{background:var(--warm-light);color:var(--stone);}
   .tscroll{max-height:none;overflow:visible;}
   .cwrap{height:170px!important;}
 }
+/* pestaña Saldos: sus filtros solo se ven en ella; los del programa se esconden */
+.sal{display:none}
+body.enSal .seg.sal{display:inline-flex}
+body.enSal select.sal{display:inline-block}
+body.enSal .nsal,body.enSal #kpis{display:none}
+#segSal{max-width:100%;overflow-x:auto}#segSal button{white-space:nowrap}
 /* ventana del Registro de fechas (dentro de la misma página) */
 .regm{display:none;position:fixed;inset:0;z-index:2000;background:rgba(14,59,54,.5);align-items:center;justify-content:center;padding:2vh 2vw}
 .regm.show{display:flex}
@@ -817,14 +823,18 @@ body.regAbierto{overflow:hidden}
 <div class="wrap">
   <div class="bar" id="barra">
     <input class="inp" id="fQ" type="search" placeholder="Buscar OP, grupo, estilo o P.O.">
-    <select id="fCli"><option value="">Todos los clientes</option></select>
-    <select id="fSem"><option value="">Todas las semanas XFTY</option></select>
-    <select id="fDesde" title="Mes de la XFTY: desde"></select>
-    <select id="fHasta" title="Mes de la XFTY: hasta"></select>
-    <div class="seg" id="fAtr" title="OP pendientes con XFTY anterior al rango"><button data-v="1" class="active">Con atrasadas anteriores</button><button data-v="0">Solo el rango</button></div>
-    <div class="seg" id="fEnc">
+    <select id="fCli" class="nsal"><option value="">Todos los clientes</option></select>
+    <select id="fSem" class="nsal"><option value="">Todas las semanas XFTY</option></select>
+    <select id="fDesde" class="nsal" title="Mes de la XFTY: desde"></select>
+    <select id="fHasta" class="nsal" title="Mes de la XFTY: hasta"></select>
+    <div class="seg nsal" id="fAtr" title="OP pendientes con XFTY anterior al rango"><button data-v="1" class="active">Con atrasadas anteriores</button><button data-v="0">Solo el rango</button></div>
+    <div class="seg nsal" id="fEnc">
       <button data-v="NO" class="active">Pendientes</button><button data-v="SI">Encajadas</button><button data-v="">Todas</button>
     </div>
+    <div class="seg sal" id="salY"><button data-v="all" class="active">Todo</button><button data-v="2025">2025</button><button data-v="2026">2026</button></div>
+    <select class="sal" id="salCli" title="Cliente"></select>
+    <select class="sal" id="salGrp" title="Grupo de producción"></select>
+    <select class="sal" id="salMot" title="Motivo"></select>
     <div class="seg" id="segVista"><button data-v="tab">Tablas</button><button data-v="tar" class="active">Tarjetas</button></div>
     <button class="btn primary" id="btnRegistro" type="button" disabled>Registro</button>
     <span class="spacer"></span>
@@ -842,6 +852,7 @@ body.regAbierto{overflow:hidden}
     <button data-t="cor">Corte</button>
     <button data-t="cos">Costura e inspección</button>
     <button data-t="aca">Acabado y segundas</button>
+    <button data-t="sal">Saldos</button>
   </div>
 
   <!-- RESUMEN -->
@@ -981,6 +992,32 @@ body.regAbierto{overflow:hidden}
         <div class="tscroll" id="tSeg"></div></div>
     </div>
   </div>
+  <!-- SALDOS -->
+  <div class="tabpane" id="p-sal">
+    <div class="vacio" id="salVacio" style="display:none"></div>
+    <div id="salCuerpo">
+      <div class="kpis" id="kSal"></div>
+      <div class="seg" id="segSal" style="margin:0 0 14px"><button data-v="atk" class="active">Dónde atacar</button><button data-v="ten">Tendencia</button><button data-v="grp">Grupos, clientes y estilos</button><button data-v="det">Detalle</button></div>
+      <div id="sal-atk"><div class="grid">
+        <div class="panel col12" id="panSalOps"><span class="tira riesgo"></span><div class="pt">OP que concentran el saldo</div><div class="ph" id="phSalOps"></div><div class="tscroll" id="tSalOps"></div></div>
+        <div class="panel col8" id="panSalReap"><span class="tira riesgo"></span><div class="pt">Saldo puntual contra saldo que reaparece</div><div class="ph">Una OP que vuelve a dejar saldo en otra fecha es saldo que no se cerró. % = prendas del grupo ÷ prendas en saldo del filtro.</div><div class="tscroll" id="tSalReap"></div></div>
+        <div class="panel col4" id="panSalNz"><span class="tira riesgo"></span><div class="pt">OP con saldo no aceptado o fuera de fecha</div><div class="ph">Las únicas prendas con causa registrada: «No aceptados por cliente» o «Fuera de fecha de embarque». 8 OP con más prendas.</div><div class="tscroll" id="tSalNz"></div></div>
+      </div></div>
+      <div id="sal-ten" style="display:none"><div class="grid">
+        <div class="panel col8"><span class="tira volumen"></span><div class="pt">Prendas en saldo por mes, año contra año</div><div class="ph">Suma de prendas por mes de realización. 2025 trae solo jun–oct y 2026 llega al 17/10 (*): no se comparan años completos. Sin producción por OP es un conteo de prendas, no una tasa.</div><div class="cwrap tall"><canvas id="chSalLin"></canvas></div></div>
+        <div class="panel col4"><span class="tira volumen"></span><div class="pt">Mismos meses en ambos años</div><div class="ph">Jun–oct, los meses que existen en los dos años. Var. = (2026 − 2025) ÷ 2025. Oct 2026 llega al 17/10. No se ve afectado por el selector de año.</div><div class="tscroll" id="tSalHom"></div></div>
+        <div class="panel col12"><span class="tira volumen"></span><div class="pt">Fechas con más saldo registrado</div><div class="ph" id="phSalFec"></div><div class="tscroll" id="tSalFec"></div></div>
+      </div></div>
+      <div id="sal-grp" style="display:none"><div class="grid">
+        <div class="panel col12"><span class="tira volumen"></span><div class="pt">Saldo por grupo de producción</div><div class="ph" id="phSalGrp"></div><div class="cwrap" id="wSalGrp"><canvas id="chSalGrp"></canvas></div><div class="tscroll" id="tSalGrp" style="margin-top:12px"></div></div>
+        <div class="panel col12"><span class="tira volumen"></span><div class="pt">Detalle por cliente</div><div class="ph">2025 (jun–oct) y 2026 (ene–oct) son volumen de prendas: sin producción por OP no se puede decir si un cliente mejora o empeora. % del saldo = sobre las prendas del filtro. % que reaparece = prendas en OP con saldo en más de una fecha ÷ prendas del cliente. No estándar = prendas no aceptadas por el cliente o fuera de fecha.</div><div class="tscroll" id="tSalCli"></div></div>
+        <div class="panel col12"><span class="tira volumen"></span><div class="pt">Estilos con más saldo</div><div class="ph" id="phSalEst"></div><div class="cwrap" id="wSalEst"><canvas id="chSalEst"></canvas></div></div>
+      </div></div>
+      <div id="sal-det" style="display:none"><div class="grid">
+        <div class="panel col12" id="panSalDet"><span class="tira"></span><div class="pt">Detalle de saldos</div><div class="ph">Un registro = una OP, talla y color con saldo. Lo más reciente arriba.</div><div class="tscroll" id="tSalDet"></div></div>
+      </div></div>
+    </div>
+  </div>
 </div>
 
 <div id="toast"></div>
@@ -1068,7 +1105,7 @@ function pintarTabla(id,cols,rows,op){
   if(tope<rows.length)h+='<div class="lsTope500">Se muestran los '+tope+' registros de '+rows.length.toLocaleString('es-PE')+'. Usa los filtros para ver los demás.</div>';
   el.innerHTML=h;
 }
-function hayFiltro(){return !!(F.q||F.cli||F.sem);}
+function hayFiltro(){return TAB==='sal'?salHayFiltro():!!(F.q||F.cli||F.sem);}
 function pctCol(t,num,den,dec){return {t:t,k:function(r){return pc(r[num],r[den]);},tipo:'pct',dec:dec,tot:function(rs){return pc(suma(rs,num),suma(rs,den));}};}
 
 /* ---------- vista: tablas o tarjetas ---------- */
@@ -1471,6 +1508,7 @@ function render(){
   var rs=filas();
   pintarKpis(rs);
   pintarResumen(rs);pintarCumplimiento(rs);pintarSeguimiento(rs);pintarSituacion(rs);pintarCorte(rs);pintarCostura(rs);pintarAcabado(rs);
+  if(TAB==='sal')pintarSaldos();
   Object.keys(charts).forEach(function(k){try{charts[k].resize();}catch(e){}});
   plegarTablasEnCelular();
 }
@@ -1520,6 +1558,7 @@ segs('segRuta',function(v){RUTA=v;render();});
 $('tabs').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;TAB=b.dataset.t;
   [].forEach.call($('tabs').querySelectorAll('button'),function(x){x.classList.toggle('active',x===b);});
   [].forEach.call(document.querySelectorAll('.tabpane'),function(p){p.classList.toggle('active',p.id==='p-'+TAB);});
+  aplicarTab();
   Object.keys(charts).forEach(function(k){try{charts[k].resize();}catch(e){}});});
 
 /* ---------- Excel LIVES ---------- */
@@ -1527,9 +1566,16 @@ function xcol(c,i){var tipo={n0:'entero',n1:'decimal',n2:'decimal',pct:'porcenta
 function xfil(c,r){var v=typeof c.k==='function'?c.k(r):r[c.k];if(c.tipo==='pct')return v==null?null:v/100;if(c.tipo==='html')return '';return v;}
 window.LS_XLS={clase:'btn',ancla:function(){return $('btnImp');},datos:function(){
   if(!D.length)throw new Error('los datos todavía están cargando');
-  var nom={res:'Resumen',cum:'Cumplimiento',seg:'Seguimiento',sit:'Reporte',fec:'Fechas XFTY y despacho',cor:'Corte',cos:'Costura e inspección',aca:'Acabado y segundas'};
+  var nom={res:'Resumen',cum:'Cumplimiento',seg:'Seguimiento',sit:'Reporte',fec:'Fechas XFTY y despacho',cor:'Corte',cos:'Costura e inspección',aca:'Acabado y segundas',sal:'Saldos'};
   var sec=(XLS[TAB]||[]).map(function(s){var cs=s.cols.filter(function(c){return c.tipo!=='html';});
     return {titulo:s.titulo,columnas:cs.map(xcol),filas:s.rows.filter(function(r){return !r.__sub;}).map(function(r){var o={};cs.forEach(function(c,i){o['c'+i]=xfil(c,r);});return o;})};});
+  if(TAB==='sal'){
+    if(!SAL)throw new Error('los saldos todavía están cargando');
+    var vn={atk:'Dónde atacar',ten:'Tendencia',grp:'Grupos, clientes y estilos',det:'Detalle'}[SALV];
+    return {titulo:'Programa PCP · Saldos',sub:vn+' · '+(SALF.y==='all'?'2025 y 2026':'año '+SALF.y)+(SALF.cli?' · '+SALF.cli:'')+(SALF.grp?' · '+SALF.grp:'')+(SALF.mot?' · '+SALF.mot:'')+(F.q?' · búsqueda: '+F.q:''),
+      formula:'Hoja Resumen: lo que se ve en la vista '+vn+' de Saldos con los filtros puestos. Hoja Detalle: cada registro (OP, color y talla) con saldo, con los mismos filtros. Datos del Excel de saldos al 17/10/2026.',origen:'Programa PCP · Saldos',
+      resumen:sec,detalle:{congelarCols:0,nota:'Una fila por OP, color y talla.',columnas:SAL_COLS_DET.map(function(c){return {campo:c.k,titulo:c.t,tipo:c.k==='cantidad'?'entero':c.k==='fecha'?'fecha':'texto'};}),filas:salDet()}};
+  }
   var rs=filas();
   var DC=[['op','OP','texto'],['comb','Color','texto'],['cliente','Cliente','texto'],['grupo','Grupo','texto'],['estilo','Estilo','texto'],['po','P.O.','texto'],['ruta','Ruta','texto'],
     ['despacho_sistema','Despacho sistema','fecha'],['despacho','Despacho PCP','fecha'],['xfty','XFTY usada','fecha'],['sem','Sem XFTY','entero'],['hito_corte','Meta corte','fecha'],['hito_costura','Meta costura','fecha'],['hito_acabado','Meta acabado','fecha'],
@@ -1541,6 +1587,148 @@ window.LS_XLS={clase:'btn',ancla:function(){return $('btnImp');},datos:function(
     formula:'Hoja Resumen: lo que se ve en la pestaña '+nom[TAB]+' con los filtros puestos. Hoja Detalle: cada OP y color con los mismos filtros.',origen:'Programa PCP',
     resumen:sec,detalle:{congelarCols:2,nota:'Una fila por OP y color.',columnas:DC.map(function(d){return {campo:d[0],titulo:d[1],tipo:d[2]};}),filas:rs}};
 }};
+
+/* ---------- Saldos (pestaña Saldos; datos de sop_api 'saldos', congelados del Excel de saldos) ---------- */
+var SAL=null,SALCARGA=false,SALF={y:'all',cli:'',grp:'',mot:''},SALV='atk',SALYC={2026:'#0F7A5A',2025:'#E07B00'};
+function cargarSaldos(){
+  if(SALCARGA)return;SALCARGA=true;
+  $('salVacio').style.display='block';$('salVacio').textContent='Cargando saldos…';$('salCuerpo').style.display='none';
+  api('saldos').then(function(j){
+    if(!j||!j.ok)throw new Error(j&&j.error||'No se pudo leer');
+    SAL=(j.filas||[]).map(function(r){r.y=+r.fecha.slice(0,4);r.m=+r.fecha.slice(5,7);return r;});
+    llenarSalSelects();SALCARGA=false;render();
+  }).catch(function(e){SALCARGA=false;$('salVacio').textContent='No se pudieron cargar los saldos: '+e.message+'. Revisa la conexión y vuelve a abrir la pestaña.';});
+}
+function salOrden(a,key){var m={};a.forEach(function(r){m[r[key]]=(m[r[key]]||0)+r.cantidad;});return Object.keys(m).sort(function(x,y){return m[y]-m[x];});}
+function llenarSalSelects(){
+  function op(t){return '<option value="'+esc(t)+'">'+esc(t)+'</option>';}
+  $('salCli').innerHTML='<option value="">Todos los clientes</option>'+salOrden(SAL,'cliente').map(op).join('');
+  $('salGrp').innerHTML='<option value="">Todos los grupos</option>'+salOrden(SAL,'grupo').map(op).join('');
+  $('salMot').innerHTML='<option value="">Todos los motivos</option>'+salOrden(SAL,'motivo').map(op).join('');
+}
+function salBase(){var q=(F.q||'').toLowerCase();return SAL.filter(function(r){
+  return (!SALF.cli||r.cliente===SALF.cli)&&(!SALF.grp||r.grupo===SALF.grp)&&(!SALF.mot||r.motivo===SALF.mot)&&
+    (!q||(r.op+' '+r.grupo+' '+r.estilo+' '+r.po+' '+r.color+' '+r.cliente+' '+r.talla+' '+r.motivo).toLowerCase().indexOf(q)>=0);});}
+function salSel(){var b=salBase();return SALF.y==='all'?b:b.filter(function(r){return r.y===+SALF.y;});}
+function salHayFiltro(){return !!(F.q||SALF.y!=='all'||SALF.cli||SALF.grp||SALF.mot);}
+function salGrupos(a,f){var m={},o=[];a.forEach(function(r){var k=f(r),g=m[k];if(!g){g=m[k]={k:k,q:0,n:0,ops:{}};o.push(g);}g.q+=r.cantidad;g.n++;g.ops[r.op]=1;});
+  o.forEach(function(g){g.nops=Object.keys(g.ops).length;});return o.sort(function(x,y){return y.q-x.q;});}
+function salOps(a){var m={},o=[];a.forEach(function(r){var g=m[r.op];
+    if(!g){g=m[r.op]={op:r.op,grupo:r.grupo,cliente:r.cliente,estilo:r.estilo,motivo:'',q:0,n:0,fs:{},p:r.fecha,u:r.fecha,nz:0};o.push(g);}
+    g.q+=r.cantidad;g.n++;g.fs[r.fecha]=1;if(r.fecha<g.p)g.p=r.fecha;if(r.fecha>g.u)g.u=r.fecha;if(r.motivo!=='SALDOS'){g.nz+=r.cantidad;g.motivo=r.motivo;}});
+  o.forEach(function(g){g.v=Object.keys(g.fs).length;g.d=difDias(g.u,g.p);});return o.sort(function(x,y){return y.q-x.q;});}
+function salTop50(items,tot){var c=0,out=[];for(var i=0;i<items.length;i++){out.push(items[i]);c+=items[i].q;if(c>=tot*.5)break;}return out;}
+function salMediana(a){if(!a.length)return null;var s=a.slice().sort(function(x,y){return x-y;}),h=s.length>>1;return s.length%2?s[h]:(s[h-1]+s[h])/2;}
+function salVista(id,cols,rows,op){op=op||{};var tar=VISTA==='tar';$(id).classList.toggle('tarjetas',tar);
+  if(tar)pintarTarjetas(id,cols,rows,op);else pintarTabla(id,cols,rows,{vacio:op.vacio,tope:op.tope,total:op.total});}
+function salKpi(cls,l,v,s,go){return '<div class="kpi clic '+cls+'" data-go="'+go+'" role="button" tabindex="0" title="Ver dónde está este dato"><span class="banda"></span><div class="cuerpo"><div class="l">'+l+'</div><div class="row"><span class="v">'+v+'</span></div><div class="s">'+s+'</div></div></div>';}
+function salDet(){return salSel().slice().sort(function(a,b){return b.fecha<a.fecha?-1:b.fecha>a.fecha?1:(a.op<b.op?-1:a.op>b.op?1:0);});}
+var SAL_COLS_DET=[{t:'Fecha',k:'fecha',tipo:'fecha'},{t:'Cliente',k:'cliente'},{t:'Grupo',k:'grupo'},{t:'P.O.',k:'po'},{t:'OP',k:'op'},{t:'Estilo',k:'estilo'},{t:'Color',k:'color'},{t:'Talla',k:'talla'},{t:'Motivo',k:'motivo'},{t:'Prendas',k:'cantidad',tipo:'n0'}];
+function pintarSaldos(){
+  if(!SAL)return;
+  var vac=$('salVacio'),cu=$('salCuerpo'),A=salSel(),B=salBase();
+  [].forEach.call($('segSal').querySelectorAll('button'),function(b){b.classList.toggle('active',b.dataset.v===SALV);});
+  [].forEach.call($('salY').querySelectorAll('button'),function(b){b.classList.toggle('active',b.dataset.v===SALF.y);});
+  if(!A.length){vac.style.display='block';vac.textContent='No hay saldos con los filtros elegidos.';cu.style.display='none';XLS.sal=[];return;}
+  vac.style.display='none';cu.style.display='';
+  var tot=suma(A,'cantidad'),ops=salOps(A),t50=salTop50(ops,tot),rec=ops.filter(function(o){return o.v>1;}),qrec=suma(rec,'q'),
+    qgen=suma(A.filter(function(r){return r.motivo==='SALDOS';}),'cantidad'),q50=suma(t50,'q');
+  var tx=SALF.y==='all'?'2025 y 2026':'año '+SALF.y;
+  $('kSal').innerHTML=
+    salKpi('hero','Prendas en saldo',n0(tot),n0(ops.length)+' OP · '+n0(A.length)+' registros · '+tx,'det:panSalDet')+
+    salKpi('neutro','OP que suman el 50 % del saldo',n0(t50.length),'de '+n0(ops.length)+' OP con saldo · '+n0(q50)+' prendas ('+fp(pc(q50,tot))+')','atk:panSalOps')+
+    salKpi('neutro','Saldo que reaparece',fp(pc(qrec,tot)),n0(qrec)+' prendas en '+n0(rec.length)+' OP con saldo en más de una fecha','atk:panSalReap')+
+    salKpi('neutro','Prendas sin causa registrada',fp(pc(qgen,tot)),'motivo «Saldos» a secas · solo '+n0(tot-qgen)+' prendas traen causa (no aceptado por cliente o fuera de fecha)','atk:panSalNz');
+  var kpiSec={titulo:'Indicadores',cols:[{t:'Indicador',k:'i'},{t:'Valor',k:'v'},{t:'Detalle',k:'d'}],rows:[
+    {i:'Prendas en saldo',v:n0(tot),d:n0(ops.length)+' OP · '+n0(A.length)+' registros · '+tx},
+    {i:'OP que suman el 50 % del saldo',v:n0(t50.length),d:'de '+n0(ops.length)+' OP · '+n0(q50)+' prendas ('+fp(pc(q50,tot))+')'},
+    {i:'Saldo que reaparece',v:fp(pc(qrec,tot)),d:n0(qrec)+' prendas en '+n0(rec.length)+' OP con saldo en más de una fecha'},
+    {i:'Prendas sin causa registrada',v:fp(pc(qgen,tot)),d:'solo '+n0(tot-qgen)+' prendas traen causa'}]};
+  ['atk','ten','grp','det'].forEach(function(v){$('sal-'+v).style.display=v===SALV?'':'none';});
+  var xs=[kpiSec];
+  if(SALV==='atk')xs=xs.concat(salAtacar(A,tot,ops,t50,rec));
+  else if(SALV==='ten')xs=xs.concat(salTendencia(A,B,tot));
+  else if(SALV==='grp')xs=xs.concat(salGruposCli(A,B,tot,ops));
+  else salDetalle(A);
+  XLS.sal=xs;
+}
+function salAtacar(A,tot,ops,t50,rec){
+  var lim=t50.slice(0,40),acc=0;
+  var rows=lim.map(function(o,i){acc+=o.q;return {n:i+1,op:o.op,grupo:o.grupo,cliente:o.cliente,estilo:o.estilo,q:o.q,pq:pc(o.q,tot),pa:pc(acc,tot),ap:o.v>1?o.v+' fechas':'1 fecha',di:o.v>1?n0(o.d)+' días':'—'};});
+  var cols=[{t:'#',k:'n'},{t:'OP',k:'op'},{t:'Grupo',k:'grupo'},{t:'Cliente',k:'cliente'},{t:'Estilo',k:'estilo'},{t:'Prendas',k:'q',tipo:'n0'},{t:'% del saldo',k:'pq',tipo:'pct'},{t:'% acum.',k:'pa',tipo:'pct'},{t:'Aparece en',k:'ap'},{t:'Entre la 1ª y la última',k:'di'}];
+  $('phSalOps').textContent=t50.length+' de '+ops.length+' OP suman el 50 % de las prendas en saldo del filtro'+(t50.length>40?' (se muestran las 40 mayores)':'')+'. % acum. = suma de las prendas de esa fila y las de arriba ÷ '+n0(tot)+'. Aparece en = en cuántas fechas distintas aparece saldo de esa OP. Grupo «SIN GRUPO» = la OP no está en el catálogo de OP.';
+  salVista('tSalOps',cols,rows,{ident:['OP','Grupo','Cliente','Estilo'],total:false,min:300});
+  var b1=ops.filter(function(o){return o.v===1;}),b2=ops.filter(function(o){return o.v===2;}),b3=ops.filter(function(o){return o.v>=3;}),l30=rec.filter(function(o){return o.d>30;});
+  function md(a){var m=salMediana(a.map(function(o){return o.d;}));return m==null?'—':n0(m)+' días';}
+  var bk=[['1 fecha (saldo puntual)',b1],['2 fechas',b2],['3 fechas o más',b3]].filter(function(x){return x[1].length;}).map(function(x){var q=suma(x[1],'q');return {g:x[0],o:x[1].length,q:q,p:pc(q,tot),m:x[0].charAt(0)==='1'?'—':md(x[1])};});
+  if(l30.length){var q30=suma(l30,'q');bk.push({g:'De las que reaparecen: más de 30 días entre la 1ª y la última',o:l30.length,q:q30,p:pc(q30,tot),m:md(l30)});}
+  var cr=[{t:'Grupo de OP',k:'g'},{t:'OP',k:'o',tipo:'n0'},{t:'Prendas',k:'q',tipo:'n0'},{t:'% de las prendas',k:'p',tipo:'pct'},{t:'Mediana entre 1ª y última',k:'m'}];
+  salVista('tSalReap',cr,bk,{ident:['Grupo de OP'],total:false,min:300});
+  var nz=ops.filter(function(o){return o.nz>0;}).sort(function(a,b){return b.nz-a.nz;}).slice(0,8).map(function(o){return {op:o.op,cliente:o.cliente,mot:o.motivo,q:o.nz};});
+  var cn=[{t:'OP',k:'op'},{t:'Cliente',k:'cliente'},{t:'Motivo',k:'mot'},{t:'Prendas',k:'q',tipo:'n0'}];
+  salVista('tSalNz',cn,nz,{ident:['OP','Cliente'],total:false,vacio:'No hay saldo no aceptado ni fuera de fecha con este filtro.',min:260});
+  return [{titulo:'OP que concentran el saldo',cols:cols,rows:rows},{titulo:'Saldo puntual contra saldo que reaparece',cols:cr,rows:bk},{titulo:'OP con saldo no aceptado o fuera de fecha',cols:cn,rows:nz}];
+}
+function salTendencia(A,B,tot){
+  var ys=SALF.y==='all'?[2026,2025]:[+SALF.y];
+  var ds=ys.map(function(y){return {label:y+(y===2026?'*':''),data:MES.map(function(_,i){var r=B.filter(function(x){return x.y===y&&x.m===i+1;});return r.length?suma(r,'cantidad'):null;}),
+    borderColor:SALYC[y],backgroundColor:SALYC[y],borderWidth:y===2026?3.5:2.5,tension:.15,pointRadius:4,pointHoverRadius:6,pointBackgroundColor:SALYC[y],pointBorderColor:'#fff',pointBorderWidth:2,spanGaps:false};});
+  nuevoChart('chSalLin',{type:'line',data:{labels:MES,datasets:ds},options:{layout:{padding:{top:34}},interaction:{mode:'nearest',intersect:false},
+    plugins:{legend:LEYENDA,tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+n0(c.parsed.y)+' prendas';}}}},
+    scales:{y:{beginAtZero:true,grace:'8%',ticks:{callback:function(v){return n0(v);}}},x:{grid:{display:false}}}},plugins:[etiquetasTendencia]});
+  var t25=0,t26=0,hom=[5,6,7,8,9].map(function(i){var a=suma(B.filter(function(r){return r.y===2025&&r.m===i+1;}),'cantidad'),b=suma(B.filter(function(r){return r.y===2026&&r.m===i+1;}),'cantidad');t25+=a;t26+=b;return {m:MES[i],a:a,b:b,v:a?(b-a)/a*100:null};});
+  hom.push({m:'Jun–oct',a:t25,b:t26,v:t25?(t26-t25)/t25*100:null});
+  var ch=[{t:'Mes',k:'m'},{t:'2025',k:'a',tipo:'n0'},{t:'2026',k:'b',tipo:'n0'},{t:'Var.',k:'v',tipo:'pct'}];
+  salVista('tSalHom',ch,hom,{ident:['Mes'],total:false,min:200});
+  var fechas=salGrupos(A,function(r){return r.fecha;});
+  var fe=fechas.slice(0,8).map(function(o){var cs=salGrupos(A.filter(function(r){return r.fecha===o.k;}),function(r){return r.cliente;});
+    return {f:o.k,q:o.q,p:pc(o.q,tot),o:o.nops,c:cs.slice(0,2).map(function(x){return x.k;}).join(', ')};});
+  $('phSalFec').textContent='El saldo se registra en pocas fechas ('+fechas.length+' con el filtro actual): un solo día puede explicar un mes entero. 8 fechas con más prendas. % = sobre '+n0(tot)+'.';
+  var cf=[{t:'Fecha',k:'f',tipo:'fecha'},{t:'Prendas',k:'q',tipo:'n0'},{t:'% del saldo',k:'p',tipo:'pct'},{t:'OP',k:'o',tipo:'n0'},{t:'Clientes',k:'c'}];
+  salVista('tSalFec',cf,fe,{ident:['Fecha'],total:false,min:260});
+  var mes=ys.map(function(y){var o={a:String(y)+(y===2026?'*':'')};MES.forEach(function(m,i){var r=B.filter(function(x){return x.y===y&&x.m===i+1;});o['m'+i]=r.length?suma(r,'cantidad'):null;});return o;});
+  return [{titulo:'Prendas en saldo por mes, año contra año',cols:[{t:'Año',k:'a'}].concat(MES.map(function(m,i){return {t:m,k:'m'+i,tipo:'n0'};})),rows:mes},
+    {titulo:'Mismos meses en ambos años (jun–oct)',cols:ch,rows:hom},{titulo:'Fechas con más saldo registrado',cols:cf,rows:fe}];
+}
+function salTablaDim(id,A,B,tot,ops,f,titulo,key){
+  var gs=salGrupos(A,f);
+  var rows=gs.map(function(g){var x=ops.filter(function(o){return o[key]===g.k;}),qr=suma(x.filter(function(o){return o.v>1;}),'q'),nz=suma(x,'nz');
+    return {k:g.k,a:suma(B.filter(function(r){return f(r)===g.k&&r.y===2025;}),'cantidad'),b:suma(B.filter(function(r){return f(r)===g.k&&r.y===2026;}),'cantidad'),q:g.q,p:pc(g.q,tot),o:g.nops,rr:pc(qr,g.q),nz:nz};});
+  var cols=[{t:titulo,k:'k'},{t:'2025',k:'a',tipo:'n0'},{t:'2026',k:'b',tipo:'n0'},{t:'Prendas (filtro)',k:'q',tipo:'n0'},{t:'% del saldo',k:'p',tipo:'pct'},{t:'OP',k:'o',tipo:'n0'},{t:'% que reaparece',k:'rr',tipo:'pct'},{t:'No estándar',k:'nz',tipo:'n0'}];
+  salVista(id,cols,rows,{ident:[titulo],total:false,tope:500,min:300});
+  return {titulo:'Saldo por '+titulo.toLowerCase(),cols:cols,rows:rows};
+}
+function salBarras(id,wid,items,color,max){
+  var top=items.slice(0,max);$(wid).style.height=Math.max(240,80+top.length*28)+'px';
+  var vals=top.map(function(o){return o.q;});
+  nuevoChart(id,{type:'bar',data:{labels:top.map(function(o){return o.k;}),datasets:[{label:'Prendas',data:vals,backgroundColor:color,borderRadius:3,maxBarThickness:20,etq:vals.map(function(v){return n0(v);})}]},
+    options:{indexAxis:'y',animation:{duration:600},layout:{padding:{right:60}},plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return n0(c.parsed.x)+' prendas';}}}},
+      scales:{x:{beginAtZero:true,ticks:{callback:function(v){return n0(v);}}},y:{grid:{display:false}}}},plugins:[etqH]});
+}
+function salGruposCli(A,B,tot,ops){
+  var gg=salGrupos(A,function(r){return r.grupo;}),es=salGrupos(A,function(r){return r.estilo;}),e50=salTop50(es,tot).length;
+  $('phSalGrp').textContent='Prendas en saldo con el filtro actual, 15 grupos con más prendas. Un grupo reúne los estilos y clientes de una producción (ej. THY-1080). «SIN GRUPO» = OP que no están en el catálogo de OP.';
+  salBarras('chSalGrp','wSalGrp',gg,'#4E6B78',15);
+  var s1=salTablaDim('tSalGrp',A,B,tot,ops,function(r){return r.grupo;},'Grupo','grupo');
+  var s2=salTablaDim('tSalCli',A,B,tot,ops,function(r){return r.cliente;},'Cliente','cliente');
+  $('phSalEst').textContent=e50+' de '+es.length+' estilos suman el 50 % de las prendas en saldo del filtro. 15 estilos con más prendas.';
+  salBarras('chSalEst','wSalEst',es,'#B45309',15);
+  var s3={titulo:'Saldo por estilo',cols:[{t:'Estilo',k:'k'},{t:'Prendas',k:'q',tipo:'n0'},{t:'% del saldo',k:'p',tipo:'pct'},{t:'OP',k:'o',tipo:'n0'}],rows:es.map(function(e){return {k:e.k,q:e.q,p:pc(e.q,tot),o:e.nops};})};
+  return [s1,s2,s3];
+}
+function salDetalle(A){
+  var a=salDet(),fil=salHayFiltro(),v=fil?a:a.slice(0,500);
+  salVista('tSalDet',SAL_COLS_DET,v,{ident:['OP','Fecha','Cliente','Grupo'],total:false,min:300});
+  if(!fil&&a.length>500)$('tSalDet').insertAdjacentHTML('beforeend','<div class="lsTope500">Se muestran los 500 registros más recientes de '+a.length.toLocaleString('es-PE')+'. Usa los filtros para ver los demás.</div>');
+}
+segs('salY',function(v){SALF.y=v;render();});
+segs('segSal',function(v){SALV=v;render();});
+$('salCli').onchange=function(){SALF.cli=this.value;render();};
+$('salGrp').onchange=function(){SALF.grp=this.value;render();};
+$('salMot').onchange=function(){SALF.mot=this.value;render();};
+$('kSal').addEventListener('click',function(e){var k=e.target.closest('.kpi');if(!k||!k.dataset.go)return;var p=k.dataset.go.split(':');SALV=p[0];render();
+  setTimeout(function(){var el=$(p[1]);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});},60);});
+function aplicarTab(){document.body.classList.toggle('enSal',TAB==='sal');if(TAB==='sal'){if(SAL)render();else cargarSaldos();}}
 
 /* ---------- carga ---------- */
 function cargar(conservar){
