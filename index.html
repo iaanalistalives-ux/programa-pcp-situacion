@@ -816,7 +816,7 @@ body.regAbierto{overflow:hidden}
 <div class="regm" id="regModal"><div class="rcaja"><div class="rbar"><b>Registro de fechas</b><button type="button" id="regCerrar">✕ Cerrar</button></div><iframe id="regFrame" title="Registro de fechas"></iframe></div></div>
 <div class="wrap">
   <div class="bar" id="barra">
-    <input class="inp" id="fQ" type="search" placeholder="Buscar OP, grupo, estilo o P.O.">
+    <input class="inp" id="fQ" type="search" placeholder="Buscar estilo">
     <select id="fCli"><option value="">Todos los clientes</option></select>
     <select id="fSem"><option value="">Todas las semanas XFTY</option></select>
     <select id="fDesde" title="Mes de la XFTY: desde"></select>
@@ -1039,7 +1039,7 @@ function pasa(r,sinEnc){
   if(F.sem&&String(semKey(r))!==F.sem)return false;
   if(!sinEnc&&F.enc&&r.encajado!==F.enc)return false;
   if(F.q){var q=F.q.toUpperCase();
-    if((r.op+' '+r.grupo+' '+r.estilo+' '+(r.po||'')+' '+r.comb+' '+r.cliente).toUpperCase().indexOf(q)<0)return false;}
+    if((r.estilo||'').toUpperCase().indexOf(q)<0)return false;}
   return true;
 }
 function filas(){return D.filter(function(r){return pasa(r);});}
