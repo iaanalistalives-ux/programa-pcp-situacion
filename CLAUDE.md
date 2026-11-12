@@ -37,7 +37,8 @@ Son dos pantallas separadas (desde el 23/10/2026, en la rama `dashboard-y-regist
 ## Quién la usa
 PCP (Analista de Planeamiento, vtineo). Absorbe a `despachos-pcp`, que queda como reserva sin cambios.
 
-## Pendientes vistos al escribir esto (22/10/2026)
-- Sistemas debe llenar `sop_situacion` y `sop_pedido` directo (hoy tienen los reportes del 22/10/2026).
+## Pendientes (22/10/2026, actualizado el 12/11/2026)
+- Sistemas debe llenar `sop_situacion` y `sop_pedido` directo. Mientras tanto las carga Claude a pedido de Christian: `sop_situacion` tiene la hoja DATA del Excel de PCP del 12/11/2026 (554 filas, 241 OP; registro So05) y las XFTY de su Hoja2; `sop_pedido` sigue con el reporte del sistema del 22/10/2026 (la hoja `detalle` del Excel de PCP está desactualizada y no sirve como fuente). Una OP nueva que no esté en `sop_pedido` no saldría en la vista: para cargarla hace falta el reporte Situación de Pedido Global.
+- Las fechas de despacho que escribió PCP (cargadas del Excel del 22/10/2026) no se actualizan con el Excel: el archivo no permite distinguir la fecha de PCP de la del sistema. Confirmar con PCP antes de cambiarlas.
 - La columna Proveedor de Programa de Inspección no se incluyó: salía de una tercera hoja (PROVEEDORES DE COSTURA) con datos de enero 2026.
 - Confirmar con PCP si las P.O. "TOP ORDER" son muestras (hoy se excluyen, igual que en el Excel).
